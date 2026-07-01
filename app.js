@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 1.0.1
+// Version 2.0.1 — UX Polish
 // Production Architecture
 // =======================================
 
@@ -12,9 +12,33 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.0.1";
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
+
+const UI_LABELS = {
+    NAV_PREVIOUS: "← Previous",
+    NAV_NEXT: "Next →",
+    NAV_FINISH: "Finish →",
+    PROGRESS_REVIEW: "Progress Review",
+    ASSESSMENT_HISTORY: "Assessment History",
+    CONTINUE_ASSESSMENT: "Continue Assessment",
+    START_NEW_ASSESSMENT: "Start New Assessment",
+    OPEN_PROGRESS_REVIEW: "Open Progress Review",
+    OPEN_ASSESSMENT_HISTORY: "Open Assessment History",
+    BACK: "Back",
+    PRINT_REPORT: "Print Report",
+    EMPTY_PROGRESS: "No completed assessments yet.",
+    EMPTY_HISTORY: "No assessment history available."
+};
+
+const UI_ICONS = {
+    CONTINUE: "▶",
+    RESTART: "↺",
+    PROGRESS: "📈",
+    HISTORY: "📚",
+    PRINT: "🖨"
+};
 
 const SCREEN_IDS = [
     "welcomeScreen",
@@ -120,6 +144,36 @@ function getDomainData(result, fallback = {}) {
     }
 
     return result.data || fallback;
+
+}
+
+function renderScreenToolbar(options = {}) {
+
+    const {
+        title,
+        backId = "screenBackBtn",
+        backLabel = UI_LABELS.BACK,
+        actionsHtml = ""
+    } = options;
+
+    return `
+        <div class="screen-toolbar" role="toolbar" aria-label="${escapeHtml(title)} toolbar">
+            <button type="button" id="${backId}" class="secondary-btn screen-toolbar-back">${backLabel}</button>
+            <h2 class="screen-toolbar-title">${escapeHtml(title)}</h2>
+            <div class="screen-toolbar-actions">${actionsHtml}</div>
+        </div>`;
+
+}
+
+function renderToolbarAction(id, icon, label) {
+
+    return `<button type="button" id="${id}" class="nav-btn btn-with-icon"><span class="btn-icon" aria-hidden="true">${icon}</span><span>${label}</span></button>`;
+
+}
+
+function renderIconButton(className, id, icon, label, extraAttributes = "") {
+
+    return `<button type="button" id="${id}" class="${className} btn-with-icon full-width-btn" ${extraAttributes}><span class="btn-icon" aria-hidden="true">${icon}</span><span>${label}</span></button>`;
 
 }
 
@@ -266,7 +320,7 @@ function showDashboardScreen() {
 function showProgressScreen() {
 
     activateScreen("progressScreen", {
-        announce: "سفرِ ترقی کھولا گیا"
+        announce: `${UI_LABELS.PROGRESS_REVIEW} opened`
     });
 
 }
@@ -330,20 +384,24 @@ function renderPersonalHomeDashboard() {
     const reassessment = getDomainData(bundle.reassessmentPlan);
     const progress = dashboard.progressSinceFirstAssessment;
     const latestSnapshotId = bundle.snapshots[0]?.snapshotId || "";
-    const continueLabel = dashboard.hasIncompleteSession ? "جائزہ جاری رکھیں" : "نیا جائزہ شروع کریں";
+    const continueLabel = dashboard.hasIncompleteSession
+        ? UI_LABELS.CONTINUE_ASSESSMENT
+        : UI_LABELS.START_NEW_ASSESSMENT;
+    const continueIcon = dashboard.hasIncompleteSession ? UI_ICONS.CONTINUE : UI_ICONS.RESTART;
 
     screen.innerHTML = `
         <div class="home-dashboard-page">
-            <section class="home-header">
-                <h2>مرکزی صفحہ</h2>
-                <p>${dashboard.growthSummary || "آپ کا ذاتی محاسبۂ نفس کا خلاصہ یہاں دکھایا جاتا ہے۔"}</p>
-            </section>
+            ${renderScreenToolbar({
+                title: "Home",
+                backId: "homeBackBtn",
+                actionsHtml: `
+                    ${renderToolbarAction("homeProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW)}
+                    ${renderToolbarAction("homeTimelineBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)}`
+            })}
 
-            <div class="home-toolbar">
-                <button type="button" id="homeBackBtn" class="secondary-btn">واپس</button>
-                <button type="button" id="homeTimelineBtn" class="secondary-btn">ترقی کا وقت خط</button>
-                <button type="button" id="homeProgressBtn" class="secondary-btn">سفرِ ترقی</button>
-            </div>
+            <section class="home-header">
+                <p>${dashboard.growthSummary || "Your personal muhasabah summary appears here."}</p>
+            </section>
 
             <div class="home-grid">
                 <article class="home-card">
@@ -417,7 +475,10 @@ function renderPersonalHomeDashboard() {
             </section>
 
             <div class="home-actions">
-                <button type="button" id="homeContinueAssessmentBtn" class="primary-btn">${continueLabel}</button>
+                <button type="button" id="homeContinueAssessmentBtn" class="primary-btn btn-with-icon full-width-btn">
+                    <span class="btn-icon" aria-hidden="true">${continueIcon}</span>
+                    <span>${continueLabel}</span>
+                </button>
             </div>
         </div>`;
 
@@ -525,6 +586,26 @@ function renderGrowthJourney() {
     const bundle = application.getGrowthBundle();
     const dashboard = getDomainData(bundle.growthDashboard);
     const overview = dashboard.overview || {};
+    const assessmentCount = overview.assessmentCount || 0;
+
+    if (assessmentCount < 1) {
+        progressScreen.innerHTML = `
+            <div class="progress-page">
+                ${renderScreenToolbar({
+                    title: UI_LABELS.PROGRESS_REVIEW,
+                    backId: "progressBackBtn",
+                    actionsHtml: renderToolbarAction("progressHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)
+                })}
+                <section class="empty-state-card">
+                    <p>${UI_LABELS.EMPTY_PROGRESS}</p>
+                </section>
+            </div>`;
+
+        document.getElementById("progressBackBtn")?.addEventListener("click", showWelcomeScreen);
+        document.getElementById("progressHistoryBtn")?.addEventListener("click", openAssessmentHistory);
+        return;
+    }
+
     const overallTrend = overview.overallTrend || {};
     const latestAssessment = overview.latestAssessment;
     const firstAssessment = overview.firstAssessment;
@@ -559,15 +640,15 @@ function renderGrowthJourney() {
 
     progressScreen.innerHTML = `
         <div class="progress-page">
-            <section class="progress-header">
-                <h2>سفرِ ترقی</h2>
-                <p>${feedback.summary || overview.trendSummary || "آپ کے محفوظ جائزوں کی بنیاد پر یہ ایک مختصر پیش رفت کا خلاصہ ہے۔"}</p>
-            </section>
+            ${renderScreenToolbar({
+                title: UI_LABELS.PROGRESS_REVIEW,
+                backId: "progressBackBtn",
+                actionsHtml: renderToolbarAction("progressHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)
+            })}
 
-            <div class="progress-toolbar">
-                <button type="button" id="progressBackBtn" class="secondary-btn">واپس</button>
-                <button type="button" id="progressHistoryBtn" class="secondary-btn">ترقی کا وقت خط</button>
-            </div>
+            <section class="progress-header">
+                <p>${feedback.summary || overview.trendSummary || "A brief summary of your saved assessments."}</p>
+            </section>
 
             <div class="progress-grid">
                 <article class="progress-card">
@@ -654,7 +735,7 @@ function formatAssessmentDate(isoDate) {
 function showHistoryScreen() {
 
     activateScreen("historyScreen", {
-        announce: "ترقی کا وقت خط کھولا گیا"
+        announce: `${UI_LABELS.ASSESSMENT_HISTORY} opened`
     });
 
 }
@@ -721,21 +802,21 @@ function renderAssessmentHistory() {
                     </div>
                 </article>`;
         }).join("")
-        : `<div class="history-empty">ابھی تک کوئی مکمل شدہ جائزہ یا غور و فکر محفوظ نہیں ہے۔</div>`;
+        : `<div class="history-empty">${UI_LABELS.EMPTY_HISTORY}</div>`;
 
     historyScreen.innerHTML = `
         <div class="history-page">
-            <section class="history-header">
-                <h2>ترقی کا وقت خط</h2>
-                <p>آپ کے جائزے اور ذاتی غور و فکر ایک ترتیب وار وقت خط میں دکھائے جاتے ہیں۔</p>
-            </section>
+            ${renderScreenToolbar({
+                title: UI_LABELS.ASSESSMENT_HISTORY,
+                backId: "historyBackBtn",
+                actionsHtml: `
+                    ${renderToolbarAction("historyProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW)}
+                    ${snapshots.length ? `<button type="button" id="clearHistoryBtn" class="secondary-btn screen-toolbar-action">Clear History</button>` : ""}`
+            })}
 
-            <div class="history-toolbar">
-                <button type="button" id="historyBackBtn" class="secondary-btn">واپس</button>
-                <button type="button" id="historyHomeBtn" class="secondary-btn">مرکزی صفحہ</button>
-                <button type="button" id="historyProgressBtn" class="secondary-btn">سفرِ ترقی</button>
-                ${snapshots.length ? `<button type="button" id="clearHistoryBtn" class="secondary-btn">تمام تاریخ مٹائیں</button>` : ""}
-            </div>
+            <section class="history-header">
+                <p>Your assessments and personal reflections in chronological order.</p>
+            </section>
 
             <div class="history-list timeline-list">
                 ${listMarkup}
@@ -743,7 +824,6 @@ function renderAssessmentHistory() {
         </div>`;
 
     document.getElementById("historyBackBtn")?.addEventListener("click", showWelcomeScreen);
-    document.getElementById("historyHomeBtn")?.addEventListener("click", openPersonalHomeDashboard);
     document.getElementById("historyProgressBtn")?.addEventListener("click", openProgressJourney);
     document.getElementById("clearHistoryBtn")?.addEventListener("click", handleClearHistory);
     historyScreen.removeEventListener("click", handleHistoryListClick);
@@ -850,30 +930,30 @@ function handleClearHistory() {
 
 function showSessionResumePrompt() {
 
-    const prompt = document.getElementById("sessionResumePrompt");
+    const incompleteSection = document.getElementById("incompleteAssessmentSection");
     const startButton = document.getElementById("startButton");
 
-    if (prompt) {
-        prompt.style.display = "block";
+    if (incompleteSection) {
+        incompleteSection.hidden = false;
     }
 
     if (startButton) {
-        startButton.style.display = "none";
+        startButton.hidden = true;
     }
 
 }
 
 function hideSessionResumePrompt() {
 
-    const prompt = document.getElementById("sessionResumePrompt");
+    const incompleteSection = document.getElementById("incompleteAssessmentSection");
     const startButton = document.getElementById("startButton");
 
-    if (prompt) {
-        prompt.style.display = "none";
+    if (incompleteSection) {
+        incompleteSection.hidden = true;
     }
 
     if (startButton) {
-        startButton.style.display = "";
+        startButton.hidden = false;
     }
 
 }
@@ -1130,8 +1210,14 @@ function updateProgress() {
     const nextButton = document.getElementById("nextBtn");
     const previousButton = document.getElementById("previousBtn");
 
-    nextButton.textContent = application.currentQuestion === totalQuestions - 1 ? "مکمل کریں →" : "اگلا →";
-    previousButton.textContent = "← پچھلا";
+    nextButton.textContent = application.currentQuestion === totalQuestions - 1
+        ? UI_LABELS.NAV_FINISH
+        : UI_LABELS.NAV_NEXT;
+    nextButton.setAttribute(
+        "aria-label",
+        application.currentQuestion === totalQuestions - 1 ? "Finish assessment" : "Next question"
+    );
+    previousButton.textContent = UI_LABELS.NAV_PREVIOUS;
 
 }
 
@@ -1352,14 +1438,14 @@ function renderDashboard(report, options = {}) {
                 <p class="report-summary-text">معیار<br>اسلامی محاسبۂ نفس<br>ورژن ${APP_VERSION}</p>
             </section>
 
-            <div class="navigation">
+            <div class="navigation report-navigation">
                 ${isHistorical
-                    ? `<button id="historyReportBackBtn" class="secondary-btn">تاریخ جائزے</button>`
-                    : `<button id="restartBtn" class="secondary-btn">دوبارہ جائزہ لیں</button>`}
-                <button id="openHistoryFromReportBtn" class="secondary-btn">ترقی کا وقت خط</button>
-                <button id="openHomeFromReportBtn" class="secondary-btn">مرکزی صفحہ</button>
-                <button id="openProgressFromReportBtn" class="secondary-btn">سفرِ ترقی</button>
-                <button id="printBtn" class="primary-btn">رپورٹ پرنٹ کریں</button>
+                    ? `<button id="historyReportBackBtn" class="secondary-btn">${UI_LABELS.ASSESSMENT_HISTORY}</button>`
+                    : `<button id="restartBtn" class="secondary-btn">${UI_ICONS.RESTART} ${UI_LABELS.START_NEW_ASSESSMENT}</button>`}
+                <button id="openHistoryFromReportBtn" class="nav-btn btn-with-icon">${UI_ICONS.HISTORY} ${UI_LABELS.ASSESSMENT_HISTORY}</button>
+                <button id="openHomeFromReportBtn" class="nav-btn">Home</button>
+                <button id="openProgressFromReportBtn" class="nav-btn btn-with-icon">${UI_ICONS.PROGRESS} ${UI_LABELS.PROGRESS_REVIEW}</button>
+                <button id="printBtn" class="primary-btn btn-with-icon">${UI_ICONS.PRINT} ${UI_LABELS.PRINT_REPORT}</button>
             </div>
         </div>`;
 

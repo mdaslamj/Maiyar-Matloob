@@ -122,55 +122,89 @@
 
             </div>
 
-            <button id="startButton" class="primary-btn" disabled>
+            <button id="startButton" class="primary-btn full-width-btn" disabled>
 
                 شروع کریں
 
             </button>
 
-            <button id="openHomeDashboardBtn" type="button" class="secondary-btn history-entry-btn" style="display:none;">
+            <section id="incompleteAssessmentSection" class="welcome-action-section welcome-action-section--priority" hidden aria-live="polite">
 
-                مرکزی صفحہ
+                <h3 class="welcome-section-heading">Incomplete Assessment</h3>
 
-            </button>
+                <p class="welcome-section-desc">
 
-            <button id="openHistoryBtn" type="button" class="secondary-btn history-entry-btn">
-
-                ترقی کا وقت خط
-
-            </button>
-
-            <button id="openProgressBtn" type="button" class="secondary-btn history-entry-btn">
-
-                سفرِ ترقی
-
-            </button>
-
-            <div id="sessionResumePrompt" class="session-resume-prompt" style="display:none;" aria-live="polite">
-
-                <p class="session-resume-text">
-
-                    آپ کا نامکمل جائزہ محفوظ ہے۔ کیا آپ جاری رکھنا چاہتے ہیں؟
+                    Your in-progress assessment is saved. Continue where you left off, or start fresh.
 
                 </p>
 
-                <div class="session-resume-actions">
+                <div class="welcome-action-buttons">
 
-                    <button id="continueSessionBtn" type="button" class="primary-btn">
+                    <button id="continueSessionBtn" type="button" class="primary-btn btn-with-icon full-width-btn">
 
-                        جاری رکھیں
+                        <span class="btn-icon" aria-hidden="true">▶</span>
+
+                        <span>Continue Assessment</span>
 
                     </button>
 
-                    <button id="restartSessionBtn" type="button" class="secondary-btn">
+                    <button id="restartSessionBtn" type="button" class="secondary-btn btn-with-icon full-width-btn">
 
-                        دوبارہ شروع کریں
+                        <span class="btn-icon" aria-hidden="true">↺</span>
+
+                        <span>Start New Assessment</span>
 
                     </button>
 
                 </div>
 
-            </div>
+            </section>
+
+            <section class="welcome-action-section">
+
+                <h3 class="welcome-section-heading">Progress Review</h3>
+
+                <p class="welcome-section-desc">
+
+                    View your personal progress, improvement trends, and recommendations.
+
+                </p>
+
+                <button id="openProgressBtn" type="button" class="nav-btn btn-with-icon full-width-btn">
+
+                    <span class="btn-icon" aria-hidden="true">📈</span>
+
+                    <span>Open Progress Review</span>
+
+                </button>
+
+            </section>
+
+            <section class="welcome-action-section">
+
+                <h3 class="welcome-section-heading">Assessment History</h3>
+
+                <p class="welcome-section-desc">
+
+                    View your previous assessments and saved reports.
+
+                </p>
+
+                <button id="openHistoryBtn" type="button" class="nav-btn btn-with-icon full-width-btn">
+
+                    <span class="btn-icon" aria-hidden="true">📚</span>
+
+                    <span>Open Assessment History</span>
+
+                </button>
+
+            </section>
+
+            <button id="openHomeDashboardBtn" type="button" class="nav-btn full-width-btn" style="display:none;">
+
+                Home Dashboard
+
+            </button>
 
             <p id="questionnaireLoadingMessage" class="questionnaire-load-status" aria-live="polite">
 
@@ -235,15 +269,15 @@
 
         <div class="navigation">
 
-            <button id="previousBtn" class="secondary-btn">
+            <button id="previousBtn" class="secondary-btn" aria-label="Previous question">
 
-                ← پچھلا
+                ← Previous
 
             </button>
 
-            <button id="nextBtn" class="primary-btn">
+            <button id="nextBtn" class="primary-btn" aria-label="Next question">
 
-                اگلا →
+                Next →
 
             </button>
 
