@@ -28,6 +28,15 @@ import {
 } from "../history/history-engine.js";
 import { buildHistoricalDashboardPresentation } from "../history/history-presentation.js";
 import { computeTrends, getSectionTrendFromResult } from "../trend/trend-engine.js";
+import {
+    buildCommunityAnswerRecord,
+    computeMaiyaarInsights,
+    computePracticeInsights,
+    computeQuestionInsights,
+    computeSectionInsights,
+    computeImplementationTrends,
+    computeEducationalPriorities
+} from "../trend/trend-engine.js";
 import { generateActionPlan } from "../action/action-engine.js";
 import { generateFeedback } from "../feedback/feedback-engine.js";
 import { computeSuggestedReassessment } from "../reassessment/reassessment-planner.js";
@@ -43,7 +52,7 @@ import {
 } from "../journal/journal-engine.js";
 import { isDomainSuccess, createSuccess } from "../shared/errors/domain-result.js";
 
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.1.0";
 
 export function validateQuestionnaireData(data) {
 
@@ -362,6 +371,12 @@ class ApplicationService {
             this.responseScale
         );
         const report = createFinalReport(assessment, this.getReportContext());
+        report.communityAnswerRecord = buildCommunityAnswerRecord(
+            this.questionnaire,
+            this.answers,
+            this.responseScale,
+            (question, index) => this.getQuestionKey(question, index)
+        );
 
         saveReport(report);
         this.persistSession();
@@ -428,6 +443,49 @@ class ApplicationService {
         this._invalidateGrowthCache();
 
         return result;
+
+    }
+
+    _getCommunityInsightInput() {
+
+        return {
+            snapshots: listSnapshots(),
+            questionnaire: this.questionnaire,
+            responseScale: this.responseScale,
+            getQuestionKey: (question, index) => this.getQuestionKey(question, index),
+            getQuestionSection: (question) => this.getQuestionSection(question),
+            loadHistoricalReport: (snapshotId) => getSnapshotReport(snapshotId)
+        };
+
+    }
+
+    getMaiyaarInsights() {
+
+        return computeMaiyaarInsights(this._getCommunityInsightInput());
+
+    }
+
+    getPracticeInsights() {
+
+        return computePracticeInsights(this._getCommunityInsightInput());
+
+    }
+
+    getSectionInsights() {
+
+        return computeSectionInsights(this._getCommunityInsightInput());
+
+    }
+
+    getImplementationTrends() {
+
+        return computeImplementationTrends(this._getCommunityInsightInput());
+
+    }
+
+    getEducationalPriorities() {
+
+        return computeEducationalPriorities(this._getCommunityInsightInput());
 
     }
 

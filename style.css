@@ -1258,6 +1258,53 @@ progress::-webkit-progress-value {
     gap: 16px;
 }
 
+.insights-tab-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.insights-tab {
+    background: #ffffff;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 18px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--muted);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+}
+
+.insights-tab.is-active {
+    color: #1d4ed8;
+    border-color: #93c5fd;
+    background: #eff6ff;
+}
+
+.insights-tab-panel {
+    display: grid;
+    gap: 16px;
+}
+
+.community-distribution {
+    display: grid;
+    gap: 6px;
+}
+
+.community-distribution-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 15px;
+}
+
+.community-distribution-value {
+    font-weight: 700;
+    color: var(--text);
+}
+
 .progress-header {
     background: #ffffff;
     border: 2px solid var(--border);

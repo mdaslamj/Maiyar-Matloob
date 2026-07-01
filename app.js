@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.0.1 — UX Polish
+// Version 2.1.0 — Insights & Trends
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.0.1";
+const APP_VERSION = "2.1.0";
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
 
@@ -20,11 +20,11 @@ const UI_LABELS = {
     NAV_PREVIOUS: "← Previous",
     NAV_NEXT: "Next →",
     NAV_FINISH: "Finish →",
-    PROGRESS_REVIEW: "Progress Review",
+    PROGRESS_REVIEW: "Maiyaar-e-Matloob Insights & Trends",
     ASSESSMENT_HISTORY: "Assessment History",
     CONTINUE_ASSESSMENT: "Continue Assessment",
     START_NEW_ASSESSMENT: "Start New Assessment",
-    OPEN_PROGRESS_REVIEW: "Open Progress Review",
+    OPEN_PROGRESS_REVIEW: "Open Insights & Trends",
     OPEN_ASSESSMENT_HISTORY: "Open Assessment History",
     BACK: "Back",
     PRINT_REPORT: "Print Report",
@@ -48,6 +48,8 @@ const SCREEN_IDS = [
     "historyScreen",
     "dashboardScreen"
 ];
+
+let progressInsightsTab = "personal";
 
 function escapeHtml(value) {
 
@@ -580,30 +582,188 @@ function getFeedbackCategoryLabel(category) {
 
 }
 
-function renderGrowthJourney() {
+function renderDistributionRow(label, value) {
 
-    const progressScreen = document.getElementById("progressScreen");
-    const bundle = application.getGrowthBundle();
+    return `
+        <div class="community-distribution-row">
+            <span class="community-distribution-label">${escapeHtml(label)}</span>
+            <span class="community-distribution-value">${value != null ? `${value}%` : "—"}</span>
+        </div>`;
+
+}
+
+function renderDistributionBlock(distribution = {}) {
+
+    return `
+        <div class="community-distribution">
+            ${renderDistributionRow("Always", distribution.always)}
+            ${renderDistributionRow("Often", distribution.often)}
+            ${renderDistributionRow("Sometimes", distribution.sometimes)}
+            ${renderDistributionRow("Never", distribution.never)}
+        </div>`;
+
+}
+
+function renderCommunitySummaryList(title, items, getLabel) {
+
+    const markup = items?.length
+        ? items.map(item => `
+            <article class="progress-section-card">
+                <div class="progress-section-title">${escapeHtml(getLabel(item))}</div>
+            </article>`).join("")
+        : `<div class="progress-empty">No data available yet.</div>`;
+
+    return `
+        <div class="progress-subsection">
+            <h4>${escapeHtml(title)}</h4>
+            <div class="progress-section-list">${markup}</div>
+        </div>`;
+
+}
+
+function renderCommunityPracticeCard(practice) {
+
+    return `
+        <article class="progress-section-card">
+            <div class="progress-section-title">${escapeHtml(practice.practiceName)}</div>
+            <div class="progress-section-label">${escapeHtml(practice.implementationStatusLabel || practice.implementationStatus || "")}</div>
+            ${renderDistributionBlock(practice.distribution)}
+        </article>`;
+
+}
+
+function renderCommunityQuestionCard(question) {
+
+    return `
+        <article class="progress-section-card">
+            <div class="progress-section-title">${escapeHtml(question.questionText)}</div>
+            <div class="progress-section-label">${escapeHtml(question.section || "")}</div>
+            ${renderDistributionBlock(question.distribution)}
+        </article>`;
+
+}
+
+function renderCommunityTrendCard(trend) {
+
+    const firstAlways = trend.firstPeriod?.distribution?.always ?? "—";
+    const latestAlways = trend.latestPeriod?.distribution?.always ?? "—";
+    const deltaAlways = trend.delta?.always;
+
+    return `
+        <article class="progress-section-card">
+            <div class="progress-section-title">${escapeHtml(trend.practiceName)}</div>
+            <div class="progress-section-metrics">
+                <span>Always: ${firstAlways}% → ${latestAlways}%</span>
+                <strong>${deltaAlways != null ? `${deltaAlways >= 0 ? "+" : ""}${deltaAlways}%` : "—"}</strong>
+            </div>
+            <div class="progress-section-label">${escapeHtml(trend.trend || "stable")}</div>
+        </article>`;
+
+}
+
+function renderCommunityInsightsPanel() {
+
+    const insightsResult = application.getMaiyaarInsights();
+    const insights = getDomainData(insightsResult);
+    const assessmentCount = insights.assessmentCount || 0;
+
+    if (!insights.hasSufficientData || assessmentCount < 1) {
+        return `
+            <section class="empty-state-card">
+                <p>Community insights appear after completed assessments include answer records. Complete a new assessment to populate this view.</p>
+            </section>`;
+    }
+
+    const summary = insights.summary || {};
+    const priorities = insights.educationalPriorities || [];
+    const practiceInsights = insights.practiceInsights || [];
+    const sectionInsights = insights.sectionInsights || [];
+    const implementationTrends = insights.implementationTrends || [];
+    const questionInsights = insights.questionInsights || [];
+
+    const priorityMarkup = priorities.length
+        ? priorities.map(priority => `
+            <article class="progress-section-card">
+                <div class="progress-section-label">#${priority.rank}</div>
+                <div class="progress-section-title">${escapeHtml(priority.practiceName)}</div>
+                <div class="progress-section-meta">Positive: ${priority.positiveRate}% · Never: ${priority.neverRate}%</div>
+            </article>`).join("")
+        : `<div class="progress-empty">No educational priorities identified with current thresholds.</div>`;
+
+    return `
+        <section class="progress-header">
+            <p>Community implementation analysis across ${assessmentCount} saved assessment${assessmentCount === 1 ? "" : "s"}.</p>
+        </section>
+
+        <section class="progress-sections">
+            <h3>Community Summary</h3>
+            ${renderCommunitySummaryList("Most Implemented Practices", summary.mostImplementedPractices, item => `${item.practiceName} (${item.positiveRate}%)`)}
+            ${renderCommunitySummaryList("Least Implemented Practices", summary.leastImplementedPractices, item => `${item.practiceName} (${item.positiveRate}%)`)}
+            ${renderCommunitySummaryList("Improving Practices", summary.improvingPractices, item => item.practiceName)}
+            ${renderCommunitySummaryList("Declining Practices", summary.decliningPractices, item => item.practiceName)}
+            ${renderCommunitySummaryList("Stable Practices", summary.stablePractices, item => item.practiceName)}
+            ${renderCommunitySummaryList("Practices Requiring Immediate Attention", summary.practicesRequiringImmediateAttention, item => `${item.practiceName} (${item.implementationStatusLabel || item.implementationStatus})`)}
+        </section>
+
+        <section class="progress-sections">
+            <h3>Educational Priorities</h3>
+            <div class="progress-section-list">${priorityMarkup}</div>
+        </section>
+
+        <section class="progress-sections">
+            <h3>Practice Implementation</h3>
+            <div class="progress-section-list">
+                ${practiceInsights.length
+                    ? practiceInsights.map(renderCommunityPracticeCard).join("")
+                    : `<div class="progress-empty">No practice data available.</div>`}
+            </div>
+        </section>
+
+        <section class="progress-sections">
+            <h3>Section Implementation</h3>
+            <div class="progress-section-list">
+                ${sectionInsights.length
+                    ? sectionInsights.map(section => `
+                        <article class="progress-section-card">
+                            <div class="progress-section-title">${escapeHtml(section.sectionTitle)}</div>
+                            <div class="progress-section-label">${escapeHtml(section.implementationStatusLabel || section.implementationStatus || "")}</div>
+                            ${renderDistributionBlock(section.distribution)}
+                        </article>`).join("")
+                    : `<div class="progress-empty">No section data available.</div>`}
+            </div>
+        </section>
+
+        <section class="progress-sections">
+            <h3>Implementation Trends</h3>
+            <div class="progress-section-list">
+                ${implementationTrends.length
+                    ? implementationTrends.map(renderCommunityTrendCard).join("")
+                    : `<div class="progress-empty">At least two assessments with answer records are required for trends.</div>`}
+            </div>
+        </section>
+
+        <section class="progress-sections">
+            <h3>Question Distributions</h3>
+            <div class="progress-section-list">
+                ${questionInsights.length
+                    ? questionInsights.map(renderCommunityQuestionCard).join("")
+                    : `<div class="progress-empty">No question data available.</div>`}
+            </div>
+        </section>`;
+
+}
+
+function renderPersonalProgressPanel(bundle) {
+
     const dashboard = getDomainData(bundle.growthDashboard);
     const overview = dashboard.overview || {};
     const assessmentCount = overview.assessmentCount || 0;
 
     if (assessmentCount < 1) {
-        progressScreen.innerHTML = `
-            <div class="progress-page">
-                ${renderScreenToolbar({
-                    title: UI_LABELS.PROGRESS_REVIEW,
-                    backId: "progressBackBtn",
-                    actionsHtml: renderToolbarAction("progressHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)
-                })}
-                <section class="empty-state-card">
-                    <p>${UI_LABELS.EMPTY_PROGRESS}</p>
-                </section>
-            </div>`;
-
-        document.getElementById("progressBackBtn")?.addEventListener("click", showWelcomeScreen);
-        document.getElementById("progressHistoryBtn")?.addEventListener("click", openAssessmentHistory);
-        return;
+        return `
+            <section class="empty-state-card">
+                <p>${UI_LABELS.EMPTY_PROGRESS}</p>
+            </section>`;
     }
 
     const overallTrend = overview.overallTrend || {};
@@ -638,6 +798,120 @@ function renderGrowthJourney() {
         ? formatAssessmentDate(nextAssessment.suggestedDate)
         : "—";
 
+    return `
+        <section class="progress-header">
+            <p>${feedback.summary || overview.trendSummary || "A brief summary of your saved assessments."}</p>
+        </section>
+
+        <div class="progress-grid">
+            <article class="progress-card">
+                <strong>مجموعی پیش رفت</strong>
+                <span class="progress-card-value">${getTrendClassificationLabel(overallTrend.classification || "Insufficient Data")}</span>
+                <span class="progress-card-meta">${overallTrend.deltaPercentage != null ? `${overallTrend.deltaPercentage}% تبدیلی` : "مزید جائزوں کی ضرورت"}</span>
+            </article>
+
+            <article class="progress-card">
+                <strong>جائزوں کی تعداد</strong>
+                <span class="progress-card-value">${overview.assessmentCount || 0}</span>
+                <span class="progress-card-meta">${overview.assessmentFrequency?.averageDaysBetween != null ? `اوسط فاصلہ: ${overview.assessmentFrequency.averageDaysBetween} دن` : "—"}</span>
+            </article>
+
+            <article class="progress-card">
+                <strong>تازہ ترین جائزہ</strong>
+                <span class="progress-card-value">${latestAssessment ? `${latestAssessment.overallPercentage}%` : "—"}</span>
+                <span class="progress-card-meta">${latestAssessment ? formatAssessmentDate(latestAssessment.createdAt) : "—"}</span>
+            </article>
+
+            <article class="progress-card">
+                <strong>پہلا جائزہ</strong>
+                <span class="progress-card-value">${firstAssessment ? `${firstAssessment.overallPercentage}%` : "—"}</span>
+                <span class="progress-card-meta">${firstAssessment ? formatAssessmentDate(firstAssessment.createdAt) : "—"}</span>
+            </article>
+        </div>
+
+        <section class="progress-sections">
+            <h3>شعبوں میں بہتری</h3>
+            <div class="progress-section-list">${sectionMarkup}</div>
+        </section>
+
+        <section class="progress-sections">
+            <h3>ترقی کا منصوبہ</h3>
+            <div class="progress-subsection">
+                <h4>تجویز کردہ توجہ</h4>
+                <div class="progress-section-list">${renderStructuredList(dashboard.recommendedFocus, "ابھی کوئی توجہ کا شعبہ شناخت نہیں ہوا۔")}</div>
+            </div>
+            <div class="progress-subsection">
+                <h4>اس ہفتے کی اولویت</h4>
+                <div class="progress-section-list">${renderStructuredList(dashboard.thisWeeksPriority, "اس ہفتے کے لیے ابھی کوئی اولویت شناخت نہیں ہوئی۔")}</div>
+            </div>
+            <div class="progress-subsection">
+                <h4>ان عادات کو جاری رکھیں</h4>
+                <div class="progress-section-list">${renderStructuredList(dashboard.continueTheseHabits, "ابھی کوئی مستحکم شعبہ شناخت نہیں ہوا۔")}</div>
+            </div>
+            <div class="progress-subsection">
+                <h4>بہتری کے مواقع</h4>
+                <div class="progress-section-list">${renderStructuredList(dashboard.improvementOpportunities, "ابھی کوئی بہتری کا موقع شناخت نہیں ہوا۔")}</div>
+            </div>
+            <div class="progress-subsection">
+                <h4>اگلے جائزے کی تجویز</h4>
+                <div class="progress-empty">${nextAssessment.days ?? "—"} دن${suggestedDateText !== "—" ? ` — تقریباً ${suggestedDateText}` : ""}</div>
+            </div>
+        </section>
+
+        <section class="progress-sections">
+            <h3>راہنمائی کا خلاصہ</h3>
+            <div class="progress-section-list">${feedbackMarkup}</div>
+        </section>`;
+
+}
+
+function renderInsightsTabBar(activeTab) {
+
+    return `
+        <div class="insights-tab-bar" role="tablist" aria-label="Insights and trends sections">
+            <button type="button"
+                id="insightsPersonalTab"
+                class="insights-tab${activeTab === "personal" ? " is-active" : ""}"
+                role="tab"
+                aria-selected="${activeTab === "personal"}"
+                aria-controls="insightsPersonalPanel">
+                Personal
+            </button>
+            <button type="button"
+                id="insightsCommunityTab"
+                class="insights-tab${activeTab === "community" ? " is-active" : ""}"
+                role="tab"
+                aria-selected="${activeTab === "community"}"
+                aria-controls="insightsCommunityPanel">
+                Community
+            </button>
+        </div>`;
+
+}
+
+function bindInsightsTabHandlers() {
+
+    document.getElementById("insightsPersonalTab")?.addEventListener("click", () => {
+        progressInsightsTab = "personal";
+        renderGrowthJourney();
+    });
+
+    document.getElementById("insightsCommunityTab")?.addEventListener("click", () => {
+        progressInsightsTab = "community";
+        renderGrowthJourney();
+    });
+
+}
+
+function renderGrowthJourney() {
+
+    const progressScreen = document.getElementById("progressScreen");
+    const bundle = application.getGrowthBundle();
+    const activeTab = progressInsightsTab;
+    const panelContent = activeTab === "community"
+        ? renderCommunityInsightsPanel()
+        : renderPersonalProgressPanel(bundle);
+
     progressScreen.innerHTML = `
         <div class="progress-page">
             ${renderScreenToolbar({
@@ -646,73 +920,26 @@ function renderGrowthJourney() {
                 actionsHtml: renderToolbarAction("progressHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)
             })}
 
-            <section class="progress-header">
-                <p>${feedback.summary || overview.trendSummary || "A brief summary of your saved assessments."}</p>
-            </section>
+            ${renderInsightsTabBar(activeTab)}
 
-            <div class="progress-grid">
-                <article class="progress-card">
-                    <strong>مجموعی پیش رفت</strong>
-                    <span class="progress-card-value">${getTrendClassificationLabel(overallTrend.classification || "Insufficient Data")}</span>
-                    <span class="progress-card-meta">${overallTrend.deltaPercentage != null ? `${overallTrend.deltaPercentage}% تبدیلی` : "مزید جائزوں کی ضرورت"}</span>
-                </article>
-
-                <article class="progress-card">
-                    <strong>جائزوں کی تعداد</strong>
-                    <span class="progress-card-value">${overview.assessmentCount || 0}</span>
-                    <span class="progress-card-meta">${overview.assessmentFrequency?.averageDaysBetween != null ? `اوسط فاصلہ: ${overview.assessmentFrequency.averageDaysBetween} دن` : "—"}</span>
-                </article>
-
-                <article class="progress-card">
-                    <strong>تازہ ترین جائزہ</strong>
-                    <span class="progress-card-value">${latestAssessment ? `${latestAssessment.overallPercentage}%` : "—"}</span>
-                    <span class="progress-card-meta">${latestAssessment ? formatAssessmentDate(latestAssessment.createdAt) : "—"}</span>
-                </article>
-
-                <article class="progress-card">
-                    <strong>پہلا جائزہ</strong>
-                    <span class="progress-card-value">${firstAssessment ? `${firstAssessment.overallPercentage}%` : "—"}</span>
-                    <span class="progress-card-meta">${firstAssessment ? formatAssessmentDate(firstAssessment.createdAt) : "—"}</span>
-                </article>
+            <div id="insightsPersonalPanel"
+                class="insights-tab-panel${activeTab === "personal" ? " is-active" : ""}"
+                role="tabpanel"
+                ${activeTab === "personal" ? "" : 'hidden'}>
+                ${activeTab === "personal" ? panelContent : ""}
             </div>
 
-            <section class="progress-sections">
-                <h3>شعبوں میں بہتری</h3>
-                <div class="progress-section-list">${sectionMarkup}</div>
-            </section>
-
-            <section class="progress-sections">
-                <h3>ترقی کا منصوبہ</h3>
-                <div class="progress-subsection">
-                    <h4>تجویز کردہ توجہ</h4>
-                    <div class="progress-section-list">${renderStructuredList(dashboard.recommendedFocus, "ابھی کوئی توجہ کا شعبہ شناخت نہیں ہوا۔")}</div>
-                </div>
-                <div class="progress-subsection">
-                    <h4>اس ہفتے کی اولویت</h4>
-                    <div class="progress-section-list">${renderStructuredList(dashboard.thisWeeksPriority, "اس ہفتے کے لیے ابھی کوئی اولویت شناخت نہیں ہوئی۔")}</div>
-                </div>
-                <div class="progress-subsection">
-                    <h4>ان عادات کو جاری رکھیں</h4>
-                    <div class="progress-section-list">${renderStructuredList(dashboard.continueTheseHabits, "ابھی کوئی مستحکم شعبہ شناخت نہیں ہوا۔")}</div>
-                </div>
-                <div class="progress-subsection">
-                    <h4>بہتری کے مواقع</h4>
-                    <div class="progress-section-list">${renderStructuredList(dashboard.improvementOpportunities, "ابھی کوئی بہتری کا موقع شناخت نہیں ہوا۔")}</div>
-                </div>
-                <div class="progress-subsection">
-                    <h4>اگلے جائزے کی تجویز</h4>
-                    <div class="progress-empty">${nextAssessment.days ?? "—"} دن${suggestedDateText !== "—" ? ` — تقریباً ${suggestedDateText}` : ""}</div>
-                </div>
-            </section>
-
-            <section class="progress-sections">
-                <h3>راہنمائی کا خلاصہ</h3>
-                <div class="progress-section-list">${feedbackMarkup}</div>
-            </section>
+            <div id="insightsCommunityPanel"
+                class="insights-tab-panel${activeTab === "community" ? " is-active" : ""}"
+                role="tabpanel"
+                ${activeTab === "community" ? "" : 'hidden'}>
+                ${activeTab === "community" ? panelContent : ""}
+            </div>
         </div>`;
 
     document.getElementById("progressBackBtn")?.addEventListener("click", showWelcomeScreen);
     document.getElementById("progressHistoryBtn")?.addEventListener("click", openAssessmentHistory);
+    bindInsightsTabHandlers();
 
 }
 

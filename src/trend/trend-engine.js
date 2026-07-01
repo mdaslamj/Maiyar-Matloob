@@ -336,3 +336,26 @@ export const TrendEngine = {
     computeTrends,
     getSectionTrendFromResult
 };
+
+export {
+    buildCommunityAnswerRecord,
+    buildQuestionCatalog,
+    collectCommunityAnswerRecords
+} from "./trend-community-data.js";
+
+export {
+    computeMaiyaarInsights,
+    computePracticeInsights,
+    computeQuestionInsights,
+    computeSectionInsights,
+    computeImplementationTrends,
+    computeEducationalPriorities,
+    computeCommunitySummary,
+    CommunityInsightsEngine
+} from "./trend-community-insights.js";
+
+export {
+    IMPLEMENTATION_STATUS_CATEGORIES,
+    EDUCATIONAL_PRIORITY_THRESHOLDS,
+    RESPONSE_BUCKETS
+} from "./trend-community-config.js";
