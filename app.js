@@ -895,68 +895,74 @@ function renderDashboard(report) {
         return current.percentage < lowest.percentage ? current : lowest;
     }, reportSections[0] || { title: "—", percentage: 100 });
 
-    const sectionMarkup = reportSections.map(section => `
-        <div class="report-section-card">
-            <div class="report-section-row">
-                <div><strong>${section.title}</strong></div>
-                <div>${section.percentage}%</div>
-                <div>${section.level}</div>
-            </div>
-            <div class="report-section-bar"><span style="width:${Math.max(4, section.percentage)}%"></span></div>
-            <p class="report-section-interpretation">${(insights.sections.find(item => item.title === section.title || getDisplaySectionName(item.title) === section.title) || {}).interpretation || ""}</p>
-        </div>`).join("");
+    const sectionMarkup = reportSections.map(section => {
+        const sectionClass = section.percentage >= 75 ? "strong-section" : section.percentage < 60 ? "weak-section" : "";
+        const sectionLevel = section.level || "Critical";
+        const sectionInterpretation = (insights.sections.find(item => item.title === section.title || getDisplaySectionName(item.title) === section.title) || {}).interpretation || "";
+
+        return `
+            <div class="report-section-card ${sectionClass}">
+                <div class="report-section-row">
+                    <div><strong>${section.title}</strong></div>
+                    <div>${section.percentage}%</div>
+                    <div>${sectionLevel}</div>
+                </div>
+                <div class="report-section-bar"><span style="width:${Math.max(4, section.percentage)}%"></span></div>
+                <p class="report-section-interpretation">${sectionInterpretation}</p>
+            </div>`;
+    }).join("");
 
     dashboard.innerHTML = `
         <div class="dashboard-report">
             <section class="report-card report-cover">
-                <h1>محاسبۂ نفس</h1>
-                <h2>معیارِ مطلوب کی روشنی میں</h2>
-                <h3>Assessment Report</h3>
+                <h1>معیار</h1>
+                <h2>محاسبۂ نفس</h2>
+                <h3>بر اساس معیارِ مطلوب</h3>
                 <div class="report-metrics">
                     <div>
-                        <strong>Assessment Date</strong>
+                        <strong>تاریخ جائزہ</strong>
                         <span>${assessmentDate}</span>
                     </div>
                     <div>
-                        <strong>Overall Percentage</strong>
+                        <strong>مجموعی فیصد</strong>
                         <span>${overall.percentage}%</span>
                     </div>
                     <div>
-                        <strong>Current Level</strong>
+                        <strong>موجودہ سطح</strong>
                         <span>${overall.level}</span>
                     </div>
                 </div>
             </section>
 
-            <section class="report-card">
-                <div class="report-card-head"><span class="report-card-icon">◎</span><h3>Overall Result</h3></div>
+            <section class="report-card report-card-blue">
+                <div class="report-card-head"><span class="report-card-icon">📊</span><h3>مجموعی نتیجہ</h3></div>
                 <div class="report-metrics">
                     <div>
-                        <strong>Overall Score</strong>
+                        <strong>مجموعی اسکور</strong>
                         <span>${overallScoreLabel}</span>
                     </div>
                     <div>
-                        <strong>Overall Rating</strong>
+                        <strong>درجہ</strong>
                         <span>${overall.level}</span>
                     </div>
                 </div>
                 <p class="report-summary-text">${insights.overallSummary}</p>
             </section>
 
-            <section class="report-card benchmark-card">
-                <div class="report-card-head"><span class="report-card-icon">✦</span><h3>معیارِ مطلوب</h3></div>
-                <p class="report-summary-text benchmark-intro">یہ جائزہ دستورِ جماعت اسلامی ہند میں بیان کردہ معیارِ مطلوب کی روشنی میں ترتیب دیا گیا ہے۔ درج ذیل نکات وہ مطلوبہ معیار ہیں جن کے تناظر میں آپ کے جوابات کا تجزیہ کیا گیا ہے۔</p>
+            <section class="report-card report-card-green">
+                <div class="report-card-head"><span class="report-card-icon">🎯</span><h3>معیارِ مطلوب</h3></div>
+                <p class="report-summary-text benchmark-intro">یہ جائزہ دستورِ جماعت اسلامی ہند میں بیان کردہ معیارِ مطلوب کی روشنی میں ترتیب دیا گیا ہے۔ اس میں آپ کے جوابات کا تجزیہ مختلف شعبوں کے حوالے سے کیا گیا ہے۔</p>
             </section>
 
-            <section class="report-card">
-                <div class="report-card-head"><span class="report-card-icon">▣</span><h3>Seven Section Analysis</h3></div>
+            <section class="report-card report-card-blue">
+                <div class="report-card-head"><span class="report-card-icon">📈</span><h3>سہ شعبوں کا تجزیہ</h3></div>
                 <div class="report-section-list">
                     ${sectionMarkup}
                 </div>
             </section>
 
-            <section class="report-card report-highlight">
-                <div class="report-card-head"><span class="report-card-icon">★</span><h3>Strongest Area</h3></div>
+            <section class="report-card report-card-green">
+                <div class="report-card-head"><span class="report-card-icon">✅</span><h3>مضبوط شعبے</h3></div>
                 <div class="report-highlight-card">
                     <div class="report-highlight-title">${strongestSection.title}</div>
                     <div class="report-highlight-value">${strongestSection.percentage}%</div>
@@ -964,8 +970,8 @@ function renderDashboard(report) {
                 </div>
             </section>
 
-            <section class="report-card">
-                <div class="report-card-head"><span class="report-card-icon">↗</span><h3>Areas for Growth</h3></div>
+            <section class="report-card report-card-orange">
+                <div class="report-card-head"><span class="report-card-icon">🌱</span><h3>بہتری کے لیے شعبے</h3></div>
                 <div class="report-section-list">
                     <div class="report-section-row">
                         <div><strong>${growthSection.title}</strong></div>
@@ -975,8 +981,8 @@ function renderDashboard(report) {
                 </div>
             </section>
 
-            <section class="report-card">
-                <div class="report-card-head"><span class="report-card-icon">✎</span><h3>Question Insights</h3></div>
+            <section class="report-card report-card-red">
+                <div class="report-card-head"><span class="report-card-icon">📝</span><h3>کمزور سوالات کے اسباق</h3></div>
                 <div class="report-section-list">
                     ${(insights.growthQuestionGroups || []).length
                         ? insights.growthQuestionGroups.map(group => `
@@ -1002,25 +1008,35 @@ function renderDashboard(report) {
                 </div>
             </section>
 
-            <section class="report-card">
-                <div class="report-card-head"><span class="report-card-icon">✓</span><h3>30-Day Action Plan</h3></div>
-                <ul class="report-action-list">
+            <section class="report-card report-card-green">
+                <div class="report-card-head"><span class="report-card-icon">🧭</span><h3>30 روزہ عملی منصوبہ</h3></div>
+                <ul class="report-checklist">
                     ${insights.actionPlan.map(item => `<li>${item}</li>`).join("")}
                 </ul>
             </section>
 
-            <section class="report-card">
-                <div class="report-card-head"><span class="report-card-icon">✦</span><h3>Reflection</h3></div>
+            <section class="report-card report-card-orange">
+                <div class="report-card-head"><span class="report-card-icon">🤲</span><h3>غور و فکر</h3></div>
                 <ul class="report-reflection-list">
-                    <li>Which answer surprised you most?</li>
-                    <li>Which area needs your immediate attention?</li>
-                    <li>What is one habit you will improve this month?</li>
+                    <li>اس رپورٹ کا کون سا حصہ آپ کو سب سے زیادہ متاثر کر گیا؟</li>
+                    <li>آپ اپنی زندگی میں سب سے پہلے کس شعبے میں بہتری لانا چاہتے ہیں؟</li>
+                    <li>آئندہ 30 دن کے لیے آپ کا ایک اہم عزم کیا ہے؟</li>
                 </ul>
             </section>
 
+            <section class="report-card report-card-blue">
+                <div class="report-card-head"><span class="report-card-icon">🙏</span><h3>دعا</h3></div>
+                <p class="report-summary-text">اللہ سے دعا ہے کہ آپ کو سچائی، استقامت اور روحانی ترقی عطا فرمائے۔</p>
+            </section>
+
+            <section class="report-card report-footer">
+                <div class="report-card-head"><span class="report-card-icon">✦</span><h3>معیار</h3></div>
+                <p class="report-summary-text">محاسبۂ نفس<br>بر اساس معیارِ مطلوب<br>دستور جماعت اسلامی ہند<br>Version 1.0</p>
+            </section>
+
             <div class="navigation">
-                <button id="restartBtn" class="secondary-btn">Restart Questionnaire</button>
-                <button id="printBtn" class="primary-btn">Print Report</button>
+                <button id="restartBtn" class="secondary-btn">دوبارہ جائزہ لیں</button>
+                <button id="printBtn" class="primary-btn">رپورٹ پرنٹ کریں</button>
             </div>
         </div>`;
 

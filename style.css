@@ -97,6 +97,17 @@ button:focus-visible {
     margin-bottom: 4px;
 }
 
+.brand-kicker {
+    display: inline-block;
+    margin-bottom: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 14px;
+    font-weight: 700;
+}
+
 .welcome-icon {
     width: 48px;
     height: 48px;
@@ -200,6 +211,8 @@ button:focus-visible {
     padding: 18px 20px 16px;
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
     min-height: calc(100dvh - 36px);
+    max-height: calc(100dvh - 36px);
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -265,6 +278,8 @@ progress::-webkit-progress-value {
     align-items: center;
     justify-content: center;
     min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 6px;
 }
 
 .question-card {
@@ -421,6 +436,22 @@ progress::-webkit-progress-value {
     box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
 }
 
+.report-card-blue {
+    background: linear-gradient(135deg, #f7fbff 0%, #eef6ff 100%);
+}
+
+.report-card-green {
+    background: linear-gradient(135deg, #f4fcf7 0%, #ebf9ef 100%);
+}
+
+.report-card-orange {
+    background: linear-gradient(135deg, #fffaf4 0%, #fff2e5 100%);
+}
+
+.report-card-red {
+    background: linear-gradient(135deg, #fff7f7 0%, #ffeceb 100%);
+}
+
 .report-card-head {
     display: flex;
     align-items: center;
@@ -496,6 +527,21 @@ progress::-webkit-progress-value {
     background: #f8fbff;
 }
 
+.report-section-card.strong-section {
+    border-color: #bbf7d0;
+    background: #f4fcf7;
+}
+
+.report-section-card.weak-section {
+    border-color: #fed7aa;
+    background: #fffaf4;
+}
+
+.report-section-card.critical-section {
+    border-color: #fecaca;
+    background: #fff7f7;
+}
+
 .report-section-row {
     display: grid;
     grid-template-columns: 2.2fr 0.8fr 1fr;
@@ -551,10 +597,26 @@ progress::-webkit-progress-value {
     color: #475569;
 }
 
+.report-checklist {
+    padding-right: 20px;
+    margin-top: 8px;
+    display: grid;
+    gap: 10px;
+}
+
+.report-checklist li,
+.report-reflection-list li,
+.report-action-list li {
+    color: #334155;
+    line-height: 1.7;
+}
+
 .report-reflection-list,
 .report-action-list {
     padding-right: 20px;
     margin-top: 8px;
+    display: grid;
+    gap: 10px;
 }
 
 .growth-group {
@@ -702,5 +764,44 @@ progress::-webkit-progress-value {
 
     .question-card {
         padding: 16px;
+    }
+}
+
+@media print {
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+
+    body {
+        background: #ffffff;
+        color: #111827;
+    }
+
+    .container {
+        width: 100%;
+        max-width: none;
+        padding: 0;
+    }
+
+    .navigation,
+    .primary-btn,
+    .secondary-btn {
+        display: none !important;
+    }
+
+    .welcome-screen,
+    .questionnaire-shell {
+        display: none !important;
+    }
+
+    .dashboard-report {
+        gap: 12px;
+        padding: 0;
+    }
+
+    .report-card {
+        box-shadow: none;
+        break-inside: avoid;
     }
 }
