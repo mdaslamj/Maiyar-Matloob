@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>محاسبۂ نفس</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="style.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <section id="welcomeScreen" class="welcome-screen">
+
+        <div class="welcome-card">
+
+            <div class="welcome-brand">
+
+                <div class="welcome-icon">✦</div>
+
+                <div>
+
+                    <h1>
+
+                        محاسبۂ نفس
+
+                    </h1>
+
+                    <h2>
+
+                        معیارِ مطلوب کی روشنی میں
+
+                    </h2>
+
+                </div>
+
+            </div>
+
+            <p class="intro">
+
+                یہ سوالنامہ صرف ذاتی محاسبہ کے لیے تیار کیا گیا ہے۔
+                براہِ کرم ہر سوال کا جواب مکمل دیانت داری سے دیں۔
+
+            </p>
+
+            <div class="infoBox">
+
+                <div>
+
+                    <strong>
+
+                        سوالات
+
+                    </strong>
+
+                    <br>
+
+                    50
+
+                </div>
+
+                <div>
+
+                    <strong>
+
+                        متوقع وقت
+
+                    </strong>
+
+                    <br>
+
+                    20–25 منٹ
+
+                </div>
+
+            </div>
+
+            <div class="responseScale">
+
+                <h3>
+
+                    جوابات کا معیار
+
+                </h3>
+
+                <ul>
+
+                    <li>ہمیشہ</li>
+
+                    <li>اکثر</li>
+
+                    <li>کبھی کبھار</li>
+
+                    <li>کبھی نہیں</li>
+
+                </ul>
+
+            </div>
+
+            <button id="startButton" class="primary-btn">
+
+                سوالنامہ شروع کریں
+
+            </button>
+
+        </div>
+
+    </section>
+
+    <section id="questionnaireScreen"
+             class="questionnaire-shell"
+             style="display:none;">
+
+        <div class="progressHeader">
+
+            <div class="progressMeta">
+
+                <span class="progress-label">سوال</span>
+
+                <span class="progress-count">
+
+                    <span id="currentQuestion">1</span>
+
+                    /
+
+                    <span id="totalQuestions">50</span>
+
+                </span>
+
+            </div>
+
+            <div id="percentage" class="progress-percent">
+
+                2%
+
+            </div>
+
+        </div>
+
+        <div class="progress-track">
+
+            <progress
+                    id="progressBar"
+                    value="1"
+                    max="50">
+            </progress>
+
+        </div>
+
+        <div id="questionContainer">
+
+        </div>
+
+        <div class="navigation">
+
+            <button id="previousBtn" class="secondary-btn">
+
+                ← Previous
+
+            </button>
+
+            <button id="nextBtn" class="primary-btn">
+
+                Next →
+
+            </button>
+
+        </div>
+
+    </section>
+
+    <section id="dashboardScreen"
+             class="dashboard-screen"
+             style="display:none;">
+    </section>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+
+</html>
