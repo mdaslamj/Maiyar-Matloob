@@ -20,7 +20,14 @@
 
 <body>
 
+<a class="skip-link" href="#mainContent">مرکزی مواد پر جائیں</a>
+
+<div id="appStatusBanner" class="app-status-banner" role="status" aria-live="polite" hidden></div>
+<div id="appAnnouncer" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
 <div class="container">
+
+    <main id="mainContent">
 
     <section id="welcomeScreen" class="welcome-screen">
 
@@ -121,6 +128,24 @@
 
             </button>
 
+            <button id="openHomeDashboardBtn" type="button" class="secondary-btn history-entry-btn" style="display:none;">
+
+                مرکزی صفحہ
+
+            </button>
+
+            <button id="openHistoryBtn" type="button" class="secondary-btn history-entry-btn">
+
+                ترقی کا وقت خط
+
+            </button>
+
+            <button id="openProgressBtn" type="button" class="secondary-btn history-entry-btn">
+
+                سفرِ ترقی
+
+            </button>
+
             <div id="sessionResumePrompt" class="session-resume-prompt" style="display:none;" aria-live="polite">
 
                 <p class="session-resume-text">
@@ -198,7 +223,8 @@
             <progress
                     id="progressBar"
                     value="1"
-                    max="50">
+                    max="50"
+                    aria-label="سوالنامے کی پیش رفت">
             </progress>
 
         </div>
@@ -225,14 +251,31 @@
 
     </section>
 
+    <section id="homeDashboardScreen"
+             class="home-dashboard-screen"
+             style="display:none;">
+    </section>
+
+    <section id="progressScreen"
+             class="progress-screen"
+             style="display:none;">
+    </section>
+
+    <section id="historyScreen"
+             class="history-screen"
+             style="display:none;">
+    </section>
+
     <section id="dashboardScreen"
              class="dashboard-screen"
              style="display:none;">
     </section>
 
+    </main>
+
 </div>
 
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 
 </body>
 

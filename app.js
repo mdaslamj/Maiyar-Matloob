@@ -4,44 +4,149 @@
 // Production Architecture
 // =======================================
 
-const APP_VERSION = "1.0.1";
-const STORAGE_KEY = "mahasaba-nafs-answers";
-const SESSION_STORAGE_KEY = "mahasaba-nafs-session";
-const REPORT_STORAGE_KEY = "mahasaba-nafs-report";
+import { application } from "./src/core/application.js";
+import {
+    getLastStorageIssue,
+    clearLastStorageIssue,
+    isLocalStorageAvailable,
+    STORAGE_USER_MESSAGES
+} from "./src/storage/storage.js";
 
-const CANONICAL_REPORT_SECTIONS = [
-    "عقیدہ و فکر",
-    "تعلق باللہ و عبادات",
-    "اسلامی فکر و طرزِ زندگی",
-    "تزکیۂ نفس",
-    "اخلاق و معاشرت",
-    "دعوت و اقامتِ دین",
-    "تنظیمی زندگی و استقامت",
-    "جامع محاسبۂ نفس"
-];
-
-const SECTION_ALIASES = {
-    "عبادات": "تعلق باللہ و عبادات",
-    "مقصدِ حیات": "اسلامی فکر و طرزِ زندگی",
-    "تزکیۂ نفس": "تزکیۂ نفس",
-    "معاملات و اخلاق": "اخلاق و معاشرت",
-    "تنظیمی زندگی": "تنظیمی زندگی و استقامت"
-};
-
-let questionnaire = [];
-let responseScale = [];
-let currentQuestion = 0;
-let answers = {};
-let isSubmitted = false;
-let questionnaireReady = false;
+const APP_VERSION = "2.0.0";
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
 
+const SCREEN_IDS = [
+    "welcomeScreen",
+    "questionnaireScreen",
+    "homeDashboardScreen",
+    "progressScreen",
+    "historyScreen",
+    "dashboardScreen"
+];
+
+function escapeHtml(value) {
+
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+}
+
+function announceToScreenReader(message) {
+
+    const announcer = document.getElementById("appAnnouncer");
+
+    if (!announcer || !message) {
+        return;
+    }
+
+    announcer.textContent = "";
+    window.requestAnimationFrame(() => {
+        announcer.textContent = message;
+    });
+
+}
+
+function showAppStatus(message) {
+
+    const banner = document.getElementById("appStatusBanner");
+
+    if (!banner) {
+        return;
+    }
+
+    if (!message) {
+        banner.hidden = true;
+        banner.textContent = "";
+        return;
+    }
+
+    banner.hidden = false;
+    banner.textContent = message;
+
+}
+
+function refreshStorageStatusBanner() {
+
+    const issue = getLastStorageIssue();
+
+    if (issue?.message) {
+        showAppStatus(issue.message);
+        return;
+    }
+
+    showAppStatus("");
+
+}
+
+function activateScreen(screenId, options = {}) {
+
+    SCREEN_IDS.forEach(id => {
+        const element = document.getElementById(id);
+
+        if (!element) {
+            return;
+        }
+
+        const isActive = id === screenId;
+        element.style.display = isActive ? "block" : "none";
+        element.setAttribute("aria-hidden", isActive ? "false" : "true");
+    });
+
+    document.body.classList.toggle("questionnaire-active", screenId === "questionnaireScreen");
+
+    if (options.announce) {
+        announceToScreenReader(options.announce);
+    }
+
+    if (options.focusTargetId) {
+        const focusTarget = document.getElementById(options.focusTargetId);
+
+        if (focusTarget) {
+            focusTarget.focus();
+        }
+    }
+
+}
+
+function getDomainData(result, fallback = {}) {
+
+    if (result?.code !== "Success") {
+        return fallback;
+    }
+
+    return result.data || fallback;
+
+}
+
 function initializeApp() {
+
+    if (!isLocalStorageAvailable()) {
+        showAppStatus(STORAGE_USER_MESSAGES.unavailable);
+    }
 
     setQuestionnaireLoadState("loading");
     bindEvents();
+    initializeScreenAccessibility();
     loadQuestionnaire();
+
+}
+
+function initializeScreenAccessibility() {
+
+    SCREEN_IDS.forEach(id => {
+        const element = document.getElementById(id);
+
+        if (!element) {
+            return;
+        }
+
+        element.setAttribute("aria-hidden", id === "welcomeScreen" ? "false" : "true");
+    });
 
 }
 
@@ -51,6 +156,8 @@ async function loadQuestionnaire() {
 
     try {
 
+        await application.initializeInfrastructure();
+
         const response = await fetch("questionnaire.json");
 
         if (!response.ok) {
@@ -58,72 +165,29 @@ async function loadQuestionnaire() {
         }
 
         const data = await response.json();
-        const validation = validateQuestionnaireData(data);
+        application.initializeQuestionnaire(data);
 
-        if (!validation.valid) {
-            throw new Error(validation.reason);
+        document.getElementById("totalQuestions").textContent = application.questionnaire.length;
+
+        if (application.questionnaire.length !== 50) {
+            console.warn("Expected 50 questions, received", application.questionnaire.length);
         }
 
-        questionnaire = data.questions;
-        responseScale = Array.isArray(data.responseScale) ? data.responseScale : [];
-        questionnaireReady = true;
-
-        document.getElementById("totalQuestions").textContent = questionnaire.length;
-
-        if (questionnaire.length !== 50) {
-            console.warn("Expected 50 questions, received", questionnaire.length);
-        }
-
-        answers = loadAnswers();
         updateProgress();
         setQuestionnaireLoadState("ready");
+        updateHomeDashboardEntryVisibility();
+        refreshStorageStatusBanner();
         restorePersistedState();
 
     }
 
     catch (error) {
 
-        questionnaire = [];
-        responseScale = [];
-        questionnaireReady = false;
+        application.resetQuestionnaireLoad();
         console.error("Questionnaire load failed:", error);
         setQuestionnaireLoadState("error");
 
     }
-
-}
-
-function validateQuestionnaireData(data) {
-
-    if (!data || typeof data !== "object") {
-        return { valid: false, reason: "Questionnaire data is not a valid object" };
-    }
-
-    if (!Array.isArray(data.questions) || data.questions.length === 0) {
-        return { valid: false, reason: "Questionnaire questions array is missing or empty" };
-    }
-
-    const hasResponseScale = Array.isArray(data.responseScale) && data.responseScale.length > 0;
-
-    const hasInvalidQuestion = data.questions.some(question => {
-        if (!question || typeof question !== "object") {
-            return true;
-        }
-
-        if (typeof question.question !== "string" || !question.question.trim()) {
-            return true;
-        }
-
-        const hasOptions = Array.isArray(question.options) && question.options.length > 0;
-
-        return !hasOptions && !hasResponseScale;
-    });
-
-    if (hasInvalidQuestion) {
-        return { valid: false, reason: "Questionnaire contains malformed question entries" };
-    }
-
-    return { valid: true };
 
 }
 
@@ -150,6 +214,9 @@ function setQuestionnaireLoadState(state) {
 function bindEvents() {
 
     document.getElementById("startButton")?.addEventListener("click", startQuestionnaire);
+    document.getElementById("openHomeDashboardBtn")?.addEventListener("click", openPersonalHomeDashboard);
+    document.getElementById("openHistoryBtn")?.addEventListener("click", openAssessmentHistory);
+    document.getElementById("openProgressBtn")?.addEventListener("click", openProgressJourney);
     document.getElementById("continueSessionBtn")?.addEventListener("click", continueQuestionnaire);
     document.getElementById("restartSessionBtn")?.addEventListener("click", restartQuestionnaireFromWelcome);
     document.getElementById("previousBtn")?.addEventListener("click", previousQuestion);
@@ -159,214 +226,625 @@ function bindEvents() {
 
 }
 
+function updateHomeDashboardEntryVisibility() {
+
+    const snapshots = application.listAssessmentHistory();
+    const homeButton = document.getElementById("openHomeDashboardBtn");
+
+    if (homeButton) {
+        homeButton.style.display = snapshots.length ? "" : "none";
+    }
+
+}
+
+function showHomeDashboardScreen() {
+
+    activateScreen("homeDashboardScreen", {
+        announce: "مرکزی صفحہ کھولا گیا"
+    });
+
+}
+
 function showQuestionnaireScreen() {
 
-    document.getElementById("welcomeScreen").style.display = "none";
-    document.getElementById("questionnaireScreen").style.display = "block";
-    document.getElementById("dashboardScreen").style.display = "none";
+    activateScreen("questionnaireScreen", {
+        announce: "سوالنامہ شروع ہوا"
+    });
+
     document.getElementById("questionContainer").innerHTML = "";
-    document.body.classList.add("questionnaire-active");
-
-}
-
-function getQuestionKey(question, index) {
-
-    return question?.id || question?.standardId || `question-${index}`;
-
-}
-
-function getQuestionRequired(question) {
-
-    return question?.required !== false;
-
-}
-
-function getQuestionOptions(question) {
-
-    if (Array.isArray(question?.options) && question.options.length) {
-        return question.options.map((option, index) => ({
-            value: Number(option?.value ?? option?.score ?? option?.id ?? index + 1),
-            label: option?.label ?? option?.text ?? option?.title ?? String(option?.value ?? option?.id ?? index + 1)
-        }));
-    }
-
-    return responseScale.map(option => ({
-        value: Number(option.id),
-        label: option.label
-    }));
-
-}
-
-function getQuestionSection(question) {
-
-    return question?.section || question?.category || "General";
-
-}
-
-function getCanonicalSectionName(sectionName) {
-
-    if (!sectionName) {
-        return sectionName;
-    }
-
-    return SECTION_ALIASES[sectionName] || sectionName;
-
-}
-
-function normalizeReportCategories(categories) {
-
-    const merged = {};
-
-    categories.forEach(category => {
-        const canonicalTitle = getCanonicalSectionName(category.title);
-
-        if (!merged[canonicalTitle]) {
-            merged[canonicalTitle] = {
-                id: canonicalTitle,
-                title: canonicalTitle,
-                raw: 0,
-                max: 0
-            };
-        }
-
-        merged[canonicalTitle].raw += category.raw;
-        merged[canonicalTitle].max += category.max;
-    });
-
-    return Object.values(merged).map(entry => {
-        const percentage = entry.max ? Number(((entry.raw / entry.max) * 100).toFixed(1)) : 0;
-        const level = getPerformanceLevel(percentage);
-
-        return {
-            ...entry,
-            percentage,
-            level,
-            comment: generateCategoryComment({ percentage, level })
-        };
-    });
-
-}
-
-function getReportSectionHighlights(normalizedCategories) {
-
-    if (!normalizedCategories.length) {
-        return {
-            strongestSection: null,
-            growthSection: null
-        };
-    }
-
-    const strongestSection = [...normalizedCategories].sort((a, b) => b.percentage - a.percentage)[0];
-    const growthSection = [...normalizedCategories].sort((a, b) => a.percentage - b.percentage)[0];
-
-    return {
-        strongestSection,
-        growthSection
-    };
-
-}
-
-function getQuestionIsReverseScored(question) {
-
-    return question?.isReverseScored === true;
 
 }
 
 function showDashboardScreen() {
 
-    document.getElementById("welcomeScreen").style.display = "none";
-    document.getElementById("questionnaireScreen").style.display = "none";
-    document.getElementById("dashboardScreen").style.display = "block";
-    document.body.classList.remove("questionnaire-active");
+    activateScreen("dashboardScreen", {
+        announce: "جائزے کی رپورٹ دکھائی جا رہی ہے"
+    });
 
 }
 
-function clearStoredAnswers() {
+function showProgressScreen() {
 
-    answers = {};
-    currentQuestion = 0;
-    isSubmitted = false;
+    activateScreen("progressScreen", {
+        announce: "سفرِ ترقی کھولا گیا"
+    });
 
-    const storageKeys = [
-        STORAGE_KEY,
-        SESSION_STORAGE_KEY,
-        REPORT_STORAGE_KEY,
-        `${STORAGE_KEY}-report`,
-        "mahasaba-nafs-report",
-        "mahasaba-nafs-dashboard"
-    ];
+}
 
-    try {
-        storageKeys.forEach(key => {
-            localStorage.removeItem(key);
-            sessionStorage.removeItem(key);
-        });
+function getTrendClassificationLabel(classification) {
+
+    const labels = {
+        "Improving": "بہتری",
+        "Stable": "مستحکم",
+        "Declining": "تنازل",
+        "Insufficient Data": "ناکافی معلومات"
+    };
+
+    return labels[classification] || classification;
+
+}
+
+function openPersonalHomeDashboard() {
+
+    showHomeDashboardScreen();
+    renderPersonalHomeDashboard();
+
+}
+
+function renderPriorityCards(priorities, emptyMessage) {
+
+    if (!priorities?.length) {
+        return `<div class="home-empty">${emptyMessage}</div>`;
     }
 
-    catch (error) {
-        console.error(error);
+    return priorities.map(priority => `
+        <article class="home-card home-card-compact">
+            <strong>${priority.sectionTitle || priority.title}</strong>
+            <span>${priority.latestPercentage != null ? `${priority.latestPercentage}%` : ""}</span>
+        </article>`).join("");
+
+}
+
+function renderInsightCard(label, insight, emptyMessage) {
+
+    if (!insight) {
+        return `<div class="home-empty">${emptyMessage}</div>`;
+    }
+
+    return `
+        <article class="home-card home-card-compact">
+            <strong>${label}</strong>
+            <span>${insight.title}</span>
+            ${insight.deltaPercentage != null ? `<small>+${insight.deltaPercentage}%</small>` : ""}
+            ${insight.latestPercentage != null ? `<small>${insight.latestPercentage}%</small>` : ""}
+        </article>`;
+
+}
+
+function renderPersonalHomeDashboard() {
+
+    const screen = document.getElementById("homeDashboardScreen");
+    const bundle = application.getGrowthBundle();
+    const dashboard = getDomainData(bundle.dashboard);
+    const insights = getDomainData(bundle.insights);
+    const reassessment = getDomainData(bundle.reassessmentPlan);
+    const progress = dashboard.progressSinceFirstAssessment;
+    const latestSnapshotId = bundle.snapshots[0]?.snapshotId || "";
+    const continueLabel = dashboard.hasIncompleteSession ? "جائزہ جاری رکھیں" : "نیا جائزہ شروع کریں";
+
+    screen.innerHTML = `
+        <div class="home-dashboard-page">
+            <section class="home-header">
+                <h2>مرکزی صفحہ</h2>
+                <p>${dashboard.growthSummary || "آپ کا ذاتی محاسبۂ نفس کا خلاصہ یہاں دکھایا جاتا ہے۔"}</p>
+            </section>
+
+            <div class="home-toolbar">
+                <button type="button" id="homeBackBtn" class="secondary-btn">واپس</button>
+                <button type="button" id="homeTimelineBtn" class="secondary-btn">ترقی کا وقت خط</button>
+                <button type="button" id="homeProgressBtn" class="secondary-btn">سفرِ ترقی</button>
+            </div>
+
+            <div class="home-grid">
+                <article class="home-card">
+                    <strong>آخری جائزہ</strong>
+                    <span class="home-card-value">${dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—"}</span>
+                </article>
+                <article class="home-card">
+                    <strong>موجودہ سطح</strong>
+                    <span class="home-card-value">${dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—"}</span>
+                    <span class="home-card-meta">${dashboard.currentOverallPercentage != null ? `${dashboard.currentOverallPercentage}%` : ""}</span>
+                </article>
+                <article class="home-card">
+                    <strong>پہلے جائزے سے پیش رفت</strong>
+                    <span class="home-card-value">${progress?.deltaPercentage != null ? `${progress.deltaPercentage}%` : "—"}</span>
+                    <span class="home-card-meta">${progress ? `${progress.firstPercentage}% → ${progress.latestPercentage}%` : "مزید جائزوں کی ضرورت"}</span>
+                </article>
+                <article class="home-card">
+                    <strong>اگلے جائزے کی تجویز</strong>
+                    <span class="home-card-value">${reassessment.recommendedDate ? formatAssessmentDate(reassessment.recommendedDate) : `${reassessment.recommendedDays || dashboard.suggestedReassessmentDays || 30} دن`}</span>
+                    <span class="home-card-meta">${reassessment.reasonUrdu || ""}</span>
+                </article>
+            </div>
+
+            <section class="home-section">
+                <h3>موجودہ اولویتیں</h3>
+                <div class="home-card-list">${renderPriorityCards(dashboard.currentPriorities, "ابھی کوئی اولویت شناخت نہیں ہوئی۔")}</div>
+            </section>
+
+            <section class="home-section">
+                <h3>ذاتی بصیرت</h3>
+                <div class="home-grid home-grid-insights">
+                    ${renderInsightCard("سب سے زیادہ بہتری", insights.biggestImprovement, "—")}
+                    ${renderInsightCard("سب سے مستحکم شعبہ", insights.mostConsistentArea, "—")}
+                    ${renderInsightCard("صبر کی ضرورت", insights.areaNeedingPatience, "—")}
+                    ${renderInsightCard("اگلی توجہ", insights.suggestedNextFocus, "—")}
+                </div>
+            </section>
+
+            <section class="home-section">
+                <h3>دوبارہ جائزے کا منصوبہ</h3>
+                <div class="home-plan-card">
+                    <p><strong>تجویز کردہ تاریخ:</strong> ${reassessment.recommendedDate ? formatAssessmentDate(reassessment.recommendedDate) : "—"}</p>
+                    <p><strong>وجہ:</strong> ${reassessment.reasonUrdu || "—"}</p>
+                    <p><strong>مستقل مزاجی:</strong> ${reassessment.consistencyScore != null ? `${reassessment.consistencyScore}%` : "—"}</p>
+                    <p><strong>جائزے کا اوسط فاصلہ:</strong> ${reassessment.assessmentFrequency?.averageDaysBetween != null ? `${reassessment.assessmentFrequency.averageDaysBetween} دن` : "—"}</p>
+                </div>
+            </section>
+
+            <section class="home-section">
+                <h3>ذاتی غور و فکر</h3>
+                <form id="journalForm" class="journal-form">
+                    <label>
+                        عنوان
+                        <input type="text" id="journalTitle" name="title" maxlength="120">
+                    </label>
+                    <label>
+                        غور و فکر
+                        <textarea id="journalNotes" name="notes" rows="3"></textarea>
+                    </label>
+                    <label>
+                        سیکھے ہوئے اسباق
+                        <textarea id="journalLessons" name="lessonsLearned" rows="2"></textarea>
+                    </label>
+                    <label>
+                        بہتری کے ارادے
+                        <textarea id="journalIntentions" name="intentions" rows="2"></textarea>
+                    </label>
+                    <input type="hidden" id="journalLinkedSnapshot" value="${latestSnapshotId}">
+                    <button type="submit" class="primary-btn">غور و فکر محفوظ کریں</button>
+                </form>
+            </section>
+
+            <div class="home-actions">
+                <button type="button" id="homeContinueAssessmentBtn" class="primary-btn">${continueLabel}</button>
+            </div>
+        </div>`;
+
+    document.getElementById("homeBackBtn")?.addEventListener("click", showWelcomeScreen);
+    document.getElementById("homeTimelineBtn")?.addEventListener("click", openAssessmentHistory);
+    document.getElementById("homeProgressBtn")?.addEventListener("click", openProgressJourney);
+    document.getElementById("homeContinueAssessmentBtn")?.addEventListener("click", () => {
+        if (dashboard.hasIncompleteSession) {
+            continueQuestionnaire();
+            return;
+        }
+
+        startQuestionnaire();
+    });
+    document.getElementById("journalForm")?.addEventListener("submit", handleJournalFormSubmit);
+
+}
+
+function handleJournalFormSubmit(event) {
+
+    event.preventDefault();
+
+    const result = application.saveJournalEntry({
+        title: document.getElementById("journalTitle")?.value || "",
+        notes: document.getElementById("journalNotes")?.value || "",
+        lessonsLearned: document.getElementById("journalLessons")?.value || "",
+        intentions: document.getElementById("journalIntentions")?.value || "",
+        linkedSnapshotId: document.getElementById("journalLinkedSnapshot")?.value || null
+    });
+
+    if (result?.code !== "Success") {
+        window.alert(result?.message || STORAGE_USER_MESSAGES.generic);
+        refreshStorageStatusBanner();
+        return;
+    }
+
+    clearLastStorageIssue();
+    refreshStorageStatusBanner();
+    document.getElementById("journalForm")?.reset();
+    announceToScreenReader("آپ کی غور و فکر محفوظ ہو گئی ہے");
+    showAppStatus("آپ کی غور و فکر محفوظ ہو گئی ہے۔");
+    window.setTimeout(() => showAppStatus(""), 4000);
+
+}
+
+function openProgressJourney() {
+
+    showProgressScreen();
+    renderGrowthJourney();
+
+}
+
+function getDifficultyLabel(difficulty) {
+
+    const labels = {
+        low: "آسان",
+        moderate: "درمیانہ",
+        high: "زیادہ محنت"
+    };
+
+    return labels[difficulty] || difficulty || "";
+
+}
+
+function renderStructuredList(items, emptyMessage) {
+
+    if (!items?.length) {
+        return `<div class="progress-empty">${emptyMessage}</div>`;
+    }
+
+    return items.map(item => `
+        <article class="progress-section-card">
+            <div class="progress-section-title">${item.sectionTitle || item.title || item.message || "—"}</div>
+            ${item.latestPercentage != null
+                ? `<div class="progress-section-metrics"><span>تازہ: ${item.latestPercentage}%</span>${item.deltaPercentage != null ? `<strong>${item.deltaPercentage}%</strong>` : ""}</div>`
+                : ""}
+            ${item.classification
+                ? `<div class="progress-section-label">${getTrendClassificationLabel(item.classification)}</div>`
+                : ""}
+            ${item.estimatedImprovementDifficulty
+                ? `<div class="progress-section-meta">مشکل: ${getDifficultyLabel(item.estimatedImprovementDifficulty)}</div>`
+                : ""}
+        </article>`).join("");
+
+}
+
+function getFeedbackCategoryLabel(category) {
+
+    const labels = {
+        progress_summary: "مجموعی خلاصہ",
+        positive_reinforcement: "مثبت رجحان",
+        stable_encouragement: "مستحکم شعبے",
+        gentle_reminder: "آہستہ یاد دہانی",
+        priority_explanation: "اولویت کی وضاحت",
+        reassessment: "اگلا جائزہ"
+    };
+
+    return labels[category] || category;
+
+}
+
+function renderGrowthJourney() {
+
+    const progressScreen = document.getElementById("progressScreen");
+    const bundle = application.getGrowthBundle();
+    const dashboard = getDomainData(bundle.growthDashboard);
+    const overview = dashboard.overview || {};
+    const overallTrend = overview.overallTrend || {};
+    const latestAssessment = overview.latestAssessment;
+    const firstAssessment = overview.firstAssessment;
+    const feedback = dashboard.feedbackSummary || {};
+    const nextAssessment = dashboard.nextSuggestedAssessment || {};
+    const sectionTrends = dashboard.sectionTrends || [];
+    const improvingSections = sectionTrends.filter(section => section.classification === "Improving");
+
+    const sectionMarkup = improvingSections.length
+        ? improvingSections.map(section => `
+            <article class="progress-section-card">
+                <div class="progress-section-title">${section.title}</div>
+                <div class="progress-section-metrics">
+                    <span>${section.firstPercentage}% → ${section.latestPercentage}%</span>
+                    <strong>${section.deltaPercentage != null ? `+${section.deltaPercentage}%` : "—"}</strong>
+                </div>
+                <div class="progress-section-label">${getTrendClassificationLabel(section.classification)}</div>
+            </article>`).join("")
+        : `<div class="progress-empty">فی الحال کسی شعبے میں واضح بہتری کا رجحان نہیں ملا۔ مزید جائزے مکمل کرنے سے یہاں تبدیلی ظاہر ہوگی۔</div>`;
+
+    const feedbackMarkup = (feedback.items || []).length
+        ? feedback.items.map(item => `
+            <article class="progress-section-card">
+                <div class="progress-section-label">${getFeedbackCategoryLabel(item.category)}</div>
+                <div class="progress-section-title">${item.message}</div>
+            </article>`).join("")
+        : `<div class="progress-empty">فی الحال رائے کے لیے کافی محفوظ جائزے موجود نہیں ہیں۔</div>`;
+
+    const suggestedDateText = nextAssessment.suggestedDate
+        ? formatAssessmentDate(nextAssessment.suggestedDate)
+        : "—";
+
+    progressScreen.innerHTML = `
+        <div class="progress-page">
+            <section class="progress-header">
+                <h2>سفرِ ترقی</h2>
+                <p>${feedback.summary || overview.trendSummary || "آپ کے محفوظ جائزوں کی بنیاد پر یہ ایک مختصر پیش رفت کا خلاصہ ہے۔"}</p>
+            </section>
+
+            <div class="progress-toolbar">
+                <button type="button" id="progressBackBtn" class="secondary-btn">واپس</button>
+                <button type="button" id="progressHistoryBtn" class="secondary-btn">ترقی کا وقت خط</button>
+            </div>
+
+            <div class="progress-grid">
+                <article class="progress-card">
+                    <strong>مجموعی پیش رفت</strong>
+                    <span class="progress-card-value">${getTrendClassificationLabel(overallTrend.classification || "Insufficient Data")}</span>
+                    <span class="progress-card-meta">${overallTrend.deltaPercentage != null ? `${overallTrend.deltaPercentage}% تبدیلی` : "مزید جائزوں کی ضرورت"}</span>
+                </article>
+
+                <article class="progress-card">
+                    <strong>جائزوں کی تعداد</strong>
+                    <span class="progress-card-value">${overview.assessmentCount || 0}</span>
+                    <span class="progress-card-meta">${overview.assessmentFrequency?.averageDaysBetween != null ? `اوسط فاصلہ: ${overview.assessmentFrequency.averageDaysBetween} دن` : "—"}</span>
+                </article>
+
+                <article class="progress-card">
+                    <strong>تازہ ترین جائزہ</strong>
+                    <span class="progress-card-value">${latestAssessment ? `${latestAssessment.overallPercentage}%` : "—"}</span>
+                    <span class="progress-card-meta">${latestAssessment ? formatAssessmentDate(latestAssessment.createdAt) : "—"}</span>
+                </article>
+
+                <article class="progress-card">
+                    <strong>پہلا جائزہ</strong>
+                    <span class="progress-card-value">${firstAssessment ? `${firstAssessment.overallPercentage}%` : "—"}</span>
+                    <span class="progress-card-meta">${firstAssessment ? formatAssessmentDate(firstAssessment.createdAt) : "—"}</span>
+                </article>
+            </div>
+
+            <section class="progress-sections">
+                <h3>شعبوں میں بہتری</h3>
+                <div class="progress-section-list">${sectionMarkup}</div>
+            </section>
+
+            <section class="progress-sections">
+                <h3>ترقی کا منصوبہ</h3>
+                <div class="progress-subsection">
+                    <h4>تجویز کردہ توجہ</h4>
+                    <div class="progress-section-list">${renderStructuredList(dashboard.recommendedFocus, "ابھی کوئی توجہ کا شعبہ شناخت نہیں ہوا۔")}</div>
+                </div>
+                <div class="progress-subsection">
+                    <h4>اس ہفتے کی اولویت</h4>
+                    <div class="progress-section-list">${renderStructuredList(dashboard.thisWeeksPriority, "اس ہفتے کے لیے ابھی کوئی اولویت شناخت نہیں ہوئی۔")}</div>
+                </div>
+                <div class="progress-subsection">
+                    <h4>ان عادات کو جاری رکھیں</h4>
+                    <div class="progress-section-list">${renderStructuredList(dashboard.continueTheseHabits, "ابھی کوئی مستحکم شعبہ شناخت نہیں ہوا۔")}</div>
+                </div>
+                <div class="progress-subsection">
+                    <h4>بہتری کے مواقع</h4>
+                    <div class="progress-section-list">${renderStructuredList(dashboard.improvementOpportunities, "ابھی کوئی بہتری کا موقع شناخت نہیں ہوا۔")}</div>
+                </div>
+                <div class="progress-subsection">
+                    <h4>اگلے جائزے کی تجویز</h4>
+                    <div class="progress-empty">${nextAssessment.days ?? "—"} دن${suggestedDateText !== "—" ? ` — تقریباً ${suggestedDateText}` : ""}</div>
+                </div>
+            </section>
+
+            <section class="progress-sections">
+                <h3>راہنمائی کا خلاصہ</h3>
+                <div class="progress-section-list">${feedbackMarkup}</div>
+            </section>
+        </div>`;
+
+    document.getElementById("progressBackBtn")?.addEventListener("click", showWelcomeScreen);
+    document.getElementById("progressHistoryBtn")?.addEventListener("click", openAssessmentHistory);
+
+}
+
+function renderProgressJourney() {
+
+    renderGrowthJourney();
+
+}
+
+function formatAssessmentDate(isoDate) {
+
+    return new Date(isoDate).toLocaleDateString("ur-PK", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+
+}
+
+function showHistoryScreen() {
+
+    activateScreen("historyScreen", {
+        announce: "ترقی کا وقت خط کھولا گیا"
+    });
+
+}
+
+function openAssessmentHistory() {
+
+    showHistoryScreen();
+    renderAssessmentHistory();
+
+}
+
+function renderAssessmentHistory() {
+
+    const historyScreen = document.getElementById("historyScreen");
+    const bundle = application.getGrowthBundle();
+    const timeline = getDomainData(bundle.timeline);
+    const entries = timeline.entries || [];
+    const snapshots = bundle.snapshots || [];
+
+    const listMarkup = entries.length
+        ? entries.map(entry => {
+            const typeLabel = entry.type === "reflection" ? "غور و فکر" : "جائزہ";
+            const percentageMarkup = entry.overallPercentage != null
+                ? `<div><strong>مجموعی فیصد</strong><span>${entry.overallPercentage}%</span></div>`
+                : "";
+            const levelMarkup = entry.overallLevel
+                ? `<div><strong>موجودہ سطح</strong><span>${getPerformanceLevelLabel(entry.overallLevel)}</span></div>`
+                : "";
+            const summaryMarkup = entry.growthSummary
+                ? `<p class="timeline-summary">${escapeHtml(entry.growthSummary)}</p>`
+                : "";
+            const reflectionMarkup = entry.hasReflection && entry.reflectionTitle
+                ? `<p class="timeline-reflection"><strong>منسلک غور و فکر:</strong> ${escapeHtml(entry.reflectionTitle)}</p>`
+                : "";
+            const reflectionBody = entry.reflection
+                ? `<div class="timeline-reflection-body">
+                        ${entry.reflection.notes ? `<p>${escapeHtml(entry.reflection.notes)}</p>` : ""}
+                        ${entry.reflection.lessonsLearned ? `<p><strong>اسباق:</strong> ${escapeHtml(entry.reflection.lessonsLearned)}</p>` : ""}
+                        ${entry.reflection.intentions ? `<p><strong>ارادے:</strong> ${escapeHtml(entry.reflection.intentions)}</p>` : ""}
+                   </div>`
+                : "";
+
+            return `
+                <article class="history-item timeline-item timeline-item--${entry.type}" data-entry-id="${entry.entryId}" data-entry-type="${entry.type}">
+                    <div class="history-item-meta">
+                        <div><strong>قسم</strong><span>${typeLabel}</span></div>
+                        <div><strong>تاریخ</strong><span>${formatAssessmentDate(entry.date)}</span></div>
+                        ${percentageMarkup}
+                        ${levelMarkup}
+                    </div>
+                    ${summaryMarkup}
+                    ${reflectionMarkup}
+                    ${reflectionBody}
+                    <div class="history-item-actions">
+                        ${entry.type === "assessment" && entry.snapshotId
+                            ? `<button type="button" class="primary-btn" data-action="view-report" data-snapshot-id="${entry.snapshotId}">رپورٹ دیکھیں</button>`
+                            : ""}
+                        ${entry.type === "reflection" && entry.journalEntryId
+                            ? `<button type="button" class="secondary-btn" data-action="delete-journal" data-journal-id="${entry.journalEntryId}">غور و فکر حذف کریں</button>`
+                            : ""}
+                        ${entry.type === "assessment" && entry.snapshotId
+                            ? `<button type="button" class="secondary-btn" data-action="delete-snapshot" data-snapshot-id="${entry.snapshotId}">جائزہ حذف کریں</button>`
+                            : ""}
+                    </div>
+                </article>`;
+        }).join("")
+        : `<div class="history-empty">ابھی تک کوئی مکمل شدہ جائزہ یا غور و فکر محفوظ نہیں ہے۔</div>`;
+
+    historyScreen.innerHTML = `
+        <div class="history-page">
+            <section class="history-header">
+                <h2>ترقی کا وقت خط</h2>
+                <p>آپ کے جائزے اور ذاتی غور و فکر ایک ترتیب وار وقت خط میں دکھائے جاتے ہیں۔</p>
+            </section>
+
+            <div class="history-toolbar">
+                <button type="button" id="historyBackBtn" class="secondary-btn">واپس</button>
+                <button type="button" id="historyHomeBtn" class="secondary-btn">مرکزی صفحہ</button>
+                <button type="button" id="historyProgressBtn" class="secondary-btn">سفرِ ترقی</button>
+                ${snapshots.length ? `<button type="button" id="clearHistoryBtn" class="secondary-btn">تمام تاریخ مٹائیں</button>` : ""}
+            </div>
+
+            <div class="history-list timeline-list">
+                ${listMarkup}
+            </div>
+        </div>`;
+
+    document.getElementById("historyBackBtn")?.addEventListener("click", showWelcomeScreen);
+    document.getElementById("historyHomeBtn")?.addEventListener("click", openPersonalHomeDashboard);
+    document.getElementById("historyProgressBtn")?.addEventListener("click", openProgressJourney);
+    document.getElementById("clearHistoryBtn")?.addEventListener("click", handleClearHistory);
+    historyScreen.removeEventListener("click", handleHistoryListClick);
+    historyScreen.addEventListener("click", handleHistoryListClick);
+
+}
+
+function showWelcomeScreen() {
+
+    activateScreen("welcomeScreen", {
+        announce: "خوش آمدید صفحہ",
+        focusTargetId: "startButton"
+    });
+
+    updateHomeDashboardEntryVisibility();
+
+}
+
+function handleHistoryListClick(event) {
+
+    const button = event.target.closest("button[data-action]");
+
+    if (!button) {
+        return;
+    }
+
+    const snapshotId = button.getAttribute("data-snapshot-id");
+    const action = button.getAttribute("data-action");
+
+    if (action === "view-report") {
+        viewHistoricalReport(snapshotId);
+        return;
+    }
+
+    if (action === "delete-snapshot") {
+        handleDeleteSnapshot(snapshotId);
+        return;
+    }
+
+    if (action === "delete-journal") {
+        handleDeleteJournalEntry(button.getAttribute("data-journal-id"));
     }
 
 }
 
-function saveSession() {
+function viewHistoricalReport(snapshotId) {
 
-    try {
-        localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
-            currentQuestion,
-            isSubmitted
-        }));
+    const snapshot = application.getHistoricalSnapshot(snapshotId);
+    const report = application.getHistoricalReport(snapshotId);
+
+    if (!snapshot || !report) {
+        window.alert(STORAGE_USER_MESSAGES.missingReport);
+        renderAssessmentHistory();
+        return;
     }
 
-    catch (error) {
-        console.error(error);
-    }
+    renderDashboard(report, {
+        historical: true,
+        snapshot
+    });
 
 }
 
-function loadSession() {
+function handleDeleteSnapshot(snapshotId) {
 
-    try {
-        const stored = localStorage.getItem(SESSION_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : null;
+    const confirmed = window.confirm("کیا آپ واقعی یہ جائزہ حذف کرنا چاہتے ہیں؟");
+
+    if (!confirmed) {
+        return;
     }
 
-    catch (error) {
-        console.error(error);
-        return null;
-    }
+    application.deleteHistoricalSnapshot(snapshotId);
+    updateHomeDashboardEntryVisibility();
+    renderAssessmentHistory();
 
 }
 
-function saveReport(report) {
+function handleDeleteJournalEntry(entryId) {
 
-    try {
-        localStorage.setItem(REPORT_STORAGE_KEY, JSON.stringify(report));
+    const confirmed = window.confirm("کیا آپ واقعی یہ غور و فکر حذف کرنا چاہتے ہیں؟");
+
+    if (!confirmed) {
+        return;
     }
 
-    catch (error) {
-        console.error(error);
-    }
+    application.deleteJournalEntry(entryId);
+    renderAssessmentHistory();
 
 }
 
-function loadReport() {
+function handleClearHistory() {
 
-    try {
-        const stored = localStorage.getItem(REPORT_STORAGE_KEY);
-        return stored ? JSON.parse(stored) : null;
+    const confirmed = window.confirm("کیا آپ واقعی تمام محفوظ جائزے حذف کرنا چاہتے ہیں؟");
+
+    if (!confirmed) {
+        return;
     }
 
-    catch (error) {
-        console.error(error);
-        return null;
-    }
-
-}
-
-function hasIncompleteSession() {
-
-    return Object.keys(answers).length > 0 && !isSubmitted;
+    application.clearAssessmentHistory();
+    updateHomeDashboardEntryVisibility();
+    renderAssessmentHistory();
 
 }
 
@@ -402,31 +880,15 @@ function hideSessionResumePrompt() {
 
 function restorePersistedState() {
 
-    const session = loadSession();
+    const result = application.restorePersistedState();
 
-    if (session?.isSubmitted) {
-        const report = loadReport();
-
-        if (report) {
-            isSubmitted = true;
-            currentQuestion = Math.min(
-                Math.max(session.currentQuestion ?? questionnaire.length - 1, 0),
-                Math.max(questionnaire.length - 1, 0)
-            );
-            hideSessionResumePrompt();
-            renderDashboard(report);
-            return;
-        }
+    if (result.type === "restore-report") {
+        hideSessionResumePrompt();
+        renderDashboard(result.report);
+        return;
     }
 
-    if (session && !session.isSubmitted) {
-        currentQuestion = Math.min(
-            Math.max(session.currentQuestion ?? 0, 0),
-            Math.max(questionnaire.length - 1, 0)
-        );
-    }
-
-    if (hasIncompleteSession()) {
+    if (result.type === "resume-prompt") {
         showSessionResumePrompt();
     }
 
@@ -434,7 +896,7 @@ function restorePersistedState() {
 
 function continueQuestionnaire() {
 
-    if (!questionnaireReady || !questionnaire.length) {
+    if (!application.questionnaireReady || !application.questionnaire.length) {
         return;
     }
 
@@ -454,26 +916,26 @@ function restartQuestionnaireFromWelcome() {
 
 function startQuestionnaire() {
 
-    if (!questionnaireReady || !questionnaire.length) {
+    if (!application.questionnaireReady || !application.questionnaire.length) {
         return;
     }
 
     hideSessionResumePrompt();
     showQuestionnaireScreen();
-    clearStoredAnswers();
+    application.restartWorkflow();
     renderQuestion();
     updateProgress();
-    saveSession();
+    application.persistSession();
 
 }
 
 function renderQuestion() {
 
-    if (!questionnaire.length) {
+    if (!application.questionnaire.length) {
         return;
     }
 
-    const question = questionnaire[currentQuestion];
+    const question = application.questionnaire[application.currentQuestion];
     const markup = createQuestionMarkup(question);
     const container = document.getElementById("questionContainer");
 
@@ -487,10 +949,10 @@ function renderQuestion() {
 
 function createQuestionMarkup(question) {
 
-    const questionKey = getQuestionKey(question, currentQuestion);
-    const hasSavedAnswer = Object.prototype.hasOwnProperty.call(answers, questionKey);
-    const savedValue = hasSavedAnswer ? Number(answers[questionKey]) : null;
-    const options = getQuestionOptions(question).map(option => {
+    const questionKey = application.getQuestionKey(question, application.currentQuestion);
+    const hasSavedAnswer = Object.prototype.hasOwnProperty.call(application.answers, questionKey);
+    const savedValue = hasSavedAnswer ? Number(application.answers[questionKey]) : null;
+    const options = application.getQuestionOptions(question).map(option => {
         const checked = savedValue != null && savedValue === Number(option.value) ? "checked" : "";
 
         return `
@@ -503,8 +965,8 @@ function createQuestionMarkup(question) {
     const explanation = question?.explanation || "";
     const explanationMarkup = `
         <div class="question-explanation">
-            <a href="#" class="explanation-toggle" data-expanded="false">▼ یہ سوال کس چیز کا جائزہ لیتا ہے؟</a>
-            <div class="explanation-panel" style="display:none;">
+            <button type="button" class="explanation-toggle" aria-expanded="false" aria-controls="questionExplanationPanel">▼ یہ سوال کس چیز کا جائزہ لیتا ہے؟</button>
+            <div id="questionExplanationPanel" class="explanation-panel" hidden>
                 <div class="explanation-body">${explanation}</div>
             </div>
         </div>`;
@@ -514,7 +976,10 @@ function createQuestionMarkup(question) {
             <div class="question-id">${question.id || question.standardId || ""}</div>
             <div class="question-text">${question.question}</div>
             ${explanationMarkup}
-            <div class="answers">${options}</div>
+            <fieldset class="answers">
+                <legend class="visually-hidden">جواب منتخب کریں</legend>
+                ${options}
+            </fieldset>
             <div class="answer-validation" role="alert" aria-live="assertive" hidden>${ANSWER_VALIDATION_MESSAGE}</div>
         </div>`;
 
@@ -570,8 +1035,8 @@ function handleAnswerSelection(event) {
         return;
     }
 
-    saveAnswer(input.value);
-    saveAnswers();
+    application.recordAnswer(application.currentQuestion, input.value);
+    application.persistAnswersAndSession();
     clearAnswerValidation();
     updateProgress();
 
@@ -587,62 +1052,24 @@ function handleExplanationToggle(event) {
 
     event.preventDefault();
 
-    const panel = toggle.nextElementSibling;
+    const panelId = toggle.getAttribute("aria-controls");
+    const panel = panelId ? document.getElementById(panelId) : toggle.nextElementSibling;
 
-    if (!panel || !panel.classList.contains("explanation-panel")) {
+    if (!panel) {
         return;
     }
 
-    const isExpanded = toggle.getAttribute("data-expanded") === "true";
-    toggle.setAttribute("data-expanded", String(!isExpanded));
-    panel.style.display = isExpanded ? "none" : "block";
-
-}
-
-function saveAnswer(value) {
-
-    const question = questionnaire[currentQuestion];
-
-    if (!question) {
-        return;
-    }
-
-    answers[getQuestionKey(question, currentQuestion)] = Number(value);
-
-}
-
-function saveAnswers() {
-
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(answers));
-        saveSession();
-    }
-
-    catch (error) {
-        console.error(error);
-    }
-
-}
-
-function loadAnswers() {
-
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        return stored ? JSON.parse(stored) : {};
-    }
-
-    catch (error) {
-        console.error(error);
-        return {};
-    }
+    const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!isExpanded));
+    panel.hidden = isExpanded;
 
 }
 
 function restoreAnswer(question) {
 
-    const questionKey = getQuestionKey(question, currentQuestion);
-    const hasSavedAnswer = Object.prototype.hasOwnProperty.call(answers, questionKey);
-    const savedValue = hasSavedAnswer ? Number(answers[questionKey]) : null;
+    const questionKey = application.getQuestionKey(question, application.currentQuestion);
+    const hasSavedAnswer = Object.prototype.hasOwnProperty.call(application.answers, questionKey);
+    const savedValue = hasSavedAnswer ? Number(application.answers[questionKey]) : null;
     const radios = document.querySelectorAll("#questionContainer input[name='answer']");
 
     radios.forEach(radio => {
@@ -653,24 +1080,22 @@ function restoreAnswer(question) {
 
 function nextQuestion() {
 
-    const question = questionnaire[currentQuestion];
+    const question = application.questionnaire[application.currentQuestion];
 
     if (!question) {
         return;
     }
 
-    const questionKey = getQuestionKey(question, currentQuestion);
-
-    if (getQuestionRequired(question) && !Object.prototype.hasOwnProperty.call(answers, questionKey)) {
+    if (application.getQuestionRequired(question) && !application.isCurrentQuestionAnswered()) {
         showAnswerValidation();
         return;
     }
 
     clearAnswerValidation();
 
-    if (currentQuestion < questionnaire.length - 1) {
-        currentQuestion += 1;
-        saveSession();
+    const navigationResult = application.advanceQuestion();
+
+    if (navigationResult === "continue") {
         renderQuestion();
         return;
     }
@@ -681,9 +1106,7 @@ function nextQuestion() {
 
 function previousQuestion() {
 
-    if (currentQuestion > 0) {
-        currentQuestion -= 1;
-        saveSession();
+    if (application.goToPreviousQuestion()) {
         renderQuestion();
     }
 
@@ -691,8 +1114,8 @@ function previousQuestion() {
 
 function updateProgress() {
 
-    const totalQuestions = questionnaire.length || 0;
-    const currentNumber = totalQuestions ? currentQuestion + 1 : 0;
+    const totalQuestions = application.questionnaire.length || 0;
+    const currentNumber = totalQuestions ? application.currentQuestion + 1 : 0;
 
     document.getElementById("currentQuestion").textContent = currentNumber;
     document.getElementById("totalQuestions").textContent = totalQuestions;
@@ -707,105 +1130,8 @@ function updateProgress() {
     const nextButton = document.getElementById("nextBtn");
     const previousButton = document.getElementById("previousBtn");
 
-    nextButton.textContent = currentQuestion === totalQuestions - 1 ? "مکمل کریں →" : "اگلا →";
+    nextButton.textContent = application.currentQuestion === totalQuestions - 1 ? "مکمل کریں →" : "اگلا →";
     previousButton.textContent = "← پچھلا";
-
-}
-
-function getMaxScore(question) {
-
-    const options = getQuestionOptions(question);
-
-    return Math.max(...options.map(option => Number(option.value)), 1);
-
-}
-
-function calculateQuestionScore(question, answer) {
-
-    if (!question || answer == null) {
-        return 0;
-    }
-
-    const value = Number(answer);
-    const maxScore = getMaxScore(question);
-    const isReverseScored = getQuestionIsReverseScored(question);
-
-    return isReverseScored ? maxScore + 1 - value : value;
-
-}
-
-function calculateRawScores() {
-
-    const rawScores = {
-        overall: { raw: 0, max: 0 },
-        categories: {}
-    };
-
-    questionnaire.forEach((question, index) => {
-        const questionKey = getQuestionKey(question, index);
-        const answer = answers[questionKey];
-        if (answer == null) {
-            return;
-        }
-        const score = calculateQuestionScore(question, answer);
-        const maxScore = getMaxScore(question);
-        const sectionName = getQuestionSection(question);
-        rawScores.overall.raw += score;
-        rawScores.overall.max += maxScore;
-        if (!rawScores.categories[sectionName]) {
-            rawScores.categories[sectionName] = { raw: 0, max: 0 };
-        }
-        rawScores.categories[sectionName].raw += score;
-        rawScores.categories[sectionName].max += maxScore;
-    });
-
-    return rawScores;
-
-}
-
-function calculateCategoryPercentages(rawScores = calculateRawScores()) {
-
-    const percentages = {};
-
-    Object.entries(rawScores.categories).forEach(([key, value]) => {
-        const percentage = value.max ? (value.raw / value.max) * 100 : 0;
-        percentages[key] = {
-            raw: value.raw,
-            max: value.max,
-            percentage: Number(percentage.toFixed(1))
-        };
-    });
-
-    return percentages;
-
-}
-
-function calculateOverallPercentage(rawScores = calculateRawScores()) {
-
-    const max = rawScores.overall.max || 1;
-    return Number(((rawScores.overall.raw / max) * 100).toFixed(1));
-
-}
-
-function getPerformanceLevel(percentage) {
-
-    if (percentage >= 90) {
-        return "Excellent";
-    }
-
-    if (percentage >= 75) {
-        return "Very Good";
-    }
-
-    if (percentage >= 60) {
-        return "Good";
-    }
-
-    if (percentage >= 40) {
-        return "Needs Improvement";
-    }
-
-    return "Critical";
 
 }
 
@@ -823,399 +1149,13 @@ function getPerformanceLevelLabel(level) {
 
 }
 
-function generateOverallSummary(percentage) {
-
-    if (percentage >= 90) {
-        return "آپ کی مجموعی سطح بہت ممتاز ہے۔ آپ کے اندر روحانی اور اخلاقی تربیت کی مضبوط بنیاد موجود ہے۔";
-    }
-
-    if (percentage >= 75) {
-        return "آپ کی مجموعی سطح بہت خوبصورت ہے۔ آپ میں بہتری کے لیے چند مزید مسلسل کوششوں کی ضرورت ہے۔";
-    }
-
-    if (percentage >= 60) {
-        return "آپ کی مجموعی سطح قابلِ قبول ہے۔ اپنی اصلاح اور تزکیہ کے لیے منظم کوششوں کی ضرورت ہے۔";
-    }
-
-    if (percentage >= 40) {
-        return "آپ کی مجموعی سطح میں بہتری کی ضرورت ہے۔ حقیقی خودِ نگرانی اور محاسبہ بہت ضروری ہے۔";
-    }
-
-    return "آپ کی مجموعی سطح شدید تشویش کا باعث ہے۔ فوری اور گہرے روحانی و اخلاقی محاسبہ کی ضرورت ہے۔";
-
-}
-
-function generateCategoryComment(category) {
-
-    const percentage = category.percentage;
-    const level = category.level;
-
-    if (level === "Excellent") {
-        return "یہ سطح انتہائی قابلِ تعریف ہے۔ آپ اس شعبے میں اچھی بنیاد پر قائم ہیں۔";
-    }
-
-    if (level === "Very Good") {
-        return "یہ سطح اچھی ہے۔ تھوڑی سی توجہ اور مسلسل کوشش سے یہ مزید بہتر ہوسکتی ہے۔";
-    }
-
-    if (level === "Good") {
-        return "یہ سطح قابلِ قبول ہے۔ بعض شعبوں میں زیادہ توجہ اور نظم کی ضرورت ہے۔";
-    }
-
-    if (level === "Needs Improvement") {
-        return "یہ شعبہ بہتری کے لیے تقاضا کرتا ہے۔ اپنی عادتوں اور مشغولیات میں سوچ سمجھ کر تبدیلی کی ضرورت ہے۔";
-    }
-
-    if (percentage < 40) {
-        return "یہ شعبہ انتہائی نیازمند ہے۔ فوری اصلاح، سمجھداری اور مسلسل محاسبہ ضروری ہے۔";
-    }
-
-    return "اس شعبے میں مزید توجہ و کوشش کی ضرورت ہے۔";
-
-}
-
-function generateAssessment() {
-
-    const rawScores = calculateRawScores();
-    const categories = calculateCategoryPercentages(rawScores);
-    const overallPercentage = calculateOverallPercentage(rawScores);
-    const overallLevel = getPerformanceLevel(overallPercentage);
-
-    return {
-        overall: {
-            percentage: overallPercentage,
-            level: overallLevel,
-            summary: generateOverallSummary(overallPercentage)
-        },
-        categories: Object.entries(categories).map(([id, value]) => {
-            const level = getPerformanceLevel(value.percentage);
-            return {
-                id,
-                title: id,
-                raw: value.raw,
-                max: value.max,
-                percentage: value.percentage,
-                level,
-                comment: generateCategoryComment({ percentage: value.percentage, level })
-            };
-        })
-    };
-
-}
-
-function getOverallInterpretation(percentage) {
-
-    if (percentage >= 90) {
-        return "آپ کی مجموعی روحانی و اخلاقی سطح بہت مضبوط ہے۔ آپ کے اندر موجود بنیاد اور مسلسل کوششوں کی تاثیر واضح طور پر نظر آتی ہے۔";
-    }
-
-    if (percentage >= 75) {
-        return "آپ کی مجموعی سطح اچھی ہے۔ تھوڑی سی مزید نظم اور مسلسل محاسبہ سے آپ اپنی ترقی کو اور زیادہ پختہ کر سکتے ہیں۔";
-    }
-
-    if (percentage >= 60) {
-        return "آپ کی مجموعی سطح قابلِ قبول ہے۔ مزید توجہ اور باقاعدہ عمل سے آپ اپنی سطح کو اور بہتر بنا سکتے ہیں۔";
-    }
-
-    if (percentage >= 40) {
-        return "آپ کی مجموعی سطح میں بہتری کی ضرورت ہے۔ ایک منظم اور باقاعدہ عمل سے آپ کی روحانی و اخلاقی تربیت میں واضح پیش رفت ممکن ہے۔";
-    }
-
-    return "آپ کی مجموعی سطح میں فوری اصلاح کی ضرورت ہے۔ چھوٹے مگر باقاعدہ اقدامات سے یہ تبدیلی شروع کی جا سکتی ہے۔";
-
-}
-
-function getSectionInterpretation(sectionName, percentage) {
-
-    if (percentage >= 90) {
-        return `${sectionName} میں آپ کی سطح بہت مضبوط ہے۔ یہ شعبہ آپ کی موجودہ تربیت اور عادتوں کا ایک روشن ثبوت ہے۔`;
-    }
-
-    if (percentage >= 75) {
-        return `${sectionName} میں آپ کی سطح اچھی ہے۔ چند مزید مسلسل کوششوں سے اس شعبے کو اور زیادہ پختہ کیا جا سکتا ہے۔`;
-    }
-
-    if (percentage >= 60) {
-        return `${sectionName} میں آپ کی سطح قابلِ قبول ہے۔ نظم و ترتیب اور باقاعدہ توجہ سے اس میں مزید بہتری ممکن ہے۔`;
-    }
-
-    if (percentage >= 40) {
-        return `${sectionName} میں مزید بہتری کی ضرورت ہے۔ اس شعبے میں عملی اور باقاعدہ تبدیلی آپ کے نتائج کو بہتر کر سکتی ہے۔`;
-    }
-
-    return `${sectionName} میں فوری توجہ کی ضرورت ہے۔ اس پر مسلسل محاسبہ اور واضح عملی قدم بہت مددگار ثابت ہوں گے۔`;
-
-}
-
-function getStrongestAreaExplanation(sectionName, percentage) {
-
-    return `${sectionName} آپ کے جوابوں میں سب سے زیادہ مضبوط شعبہ ظاہر ہوتا ہے۔ ${percentage}% کی سطح اس بات کی نشانی ہے کہ آپ اس میدان میں اچھی بنیاد رکھتے ہیں۔`;
-
-}
-
-function getGrowthAreaExplanation(sectionName, percentage) {
-
-    return `${sectionName} میں مزید ترقی کے لیے ایک منظم اور باقاعدہ کوشش ضروری ہے۔ ${percentage}% کی سطح اس شعبے کو توجہ اور عملی تبدیلی کی ضرورت دکھاتی ہے۔`;
-
-}
-
-function buildActionPlan(assessment) {
-
-    const questions = questionnaire.map((question, index) => {
-        const questionKey = getQuestionKey(question, index);
-        const answer = answers[questionKey];
-        const score = answer == null ? 0 : calculateQuestionScore(question, answer);
-        const maxScore = getMaxScore(question);
-        const percentage = maxScore ? (score / maxScore) * 100 : 0;
-
-        return {
-            section: getQuestionSection(question),
-            questionText: question.question,
-            percentage: Number(percentage.toFixed(1))
-        };
-    });
-
-    const sortedQuestions = [...questions].sort((a, b) => a.percentage - b.percentage);
-    const sectionPriority = [...assessment.categories]
-        .sort((a, b) => a.percentage - b.percentage)
-        .filter(category => category.percentage < 100);
-
-    const priorities = [];
-
-    sectionPriority.forEach(category => {
-        if (priorities.length >= 3) {
-            return;
-        }
-
-        const sectionQuestions = questions.filter(item => item.section === category.title);
-        const lowestQuestion = sectionQuestions.length
-            ? sectionQuestions.reduce((worst, current) => current.percentage < worst.percentage ? current : worst, sectionQuestions[0])
-            : null;
-
-        if (!lowestQuestion) {
-            return;
-        }
-
-        priorities.push(`اس شعبے میں ترقی کے لیے ${getDisplaySectionName(category.title)} پر عمل کرتے ہوئے ${lowestQuestion.questionText} کے بارے میں ایک واضح اور عملی قدم منتخب کریں۔`);
-    });
-
-    if (priorities.length < 3) {
-        const remainingQuestions = sortedQuestions.filter(item => !priorities.some(priority => priority.includes(item.questionText)));
-
-        remainingQuestions.slice(0, 3 - priorities.length).forEach(item => {
-            priorities.push(`اپنی عادتوں کو مزید مضبوط بنانے کے لیے ${getDisplaySectionName(item.section)} کے موضوع پر ${item.questionText} سے شروع کرتے ہوئے ایک روزمرہ کا عملی قدم بنائیں۔`);
-        });
-    }
-
-    return priorities.slice(0, 3);
-
-}
-
-function getAnswerLabel(answerValue) {
-
-    const numericValue = Number(answerValue);
-    const matchingOption = responseScale.find(option => Number(option.id) === numericValue);
-
-    return matchingOption?.label || String(answerValue ?? "");
-
-}
-
-function getQuestionInsightMetadata(question) {
-
-    const explanation = question?.explanation || question?.reason || question?.whyItMatters || question?.insight;
-    const improvement = question?.improvement || question?.practicalImprovement || question?.nextStep || question?.action;
-
-    return {
-        explanation: explanation || "یہ سوال اس شعبے میں موجود کمزور یا غیر منظم عادت کی نشاندہی کرتا ہے۔",
-        improvement: improvement || "اس سوال کے مطابق ایک واضح اور عملی قدم اختیار کریں، جیسے کہ روزمرہ ایک مخصوص عادت کو نافذ کرنا۔"
-    };
-
-}
-
-function getDisplaySectionName(sectionName) {
-
-    return getCanonicalSectionName(sectionName);
-
-}
-
-function buildGrowthQuestionGroups() {
-
-    const groupedQuestions = questionnaire
-        .map((question, index) => {
-            const questionKey = getQuestionKey(question, index);
-            const answerValue = answers[questionKey];
-
-            if (answerValue == null || Number(answerValue) >= 4) {
-                return null;
-            }
-
-            if (Number(answerValue) > 2) {
-                return null;
-            }
-
-            const score = calculateQuestionScore(question, answerValue);
-            const maxScore = getMaxScore(question);
-            const percentage = maxScore ? (score / maxScore) * 100 : 0;
-            const insight = getQuestionInsightMetadata(question);
-
-            return {
-                section: getDisplaySectionName(getQuestionSection(question)),
-                questionNumber: question.id || question.standardId || `Q${index + 1}`,
-                questionText: question.question,
-                selectedAnswer: getAnswerLabel(answerValue),
-                explanation: insight.explanation,
-                improvement: insight.improvement,
-                score: Number(percentage.toFixed(1)),
-                answerValue: Number(answerValue)
-            };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.answerValue - b.answerValue || a.score - b.score);
-
-    const groups = [];
-
-    groupedQuestions.forEach(question => {
-        const existingGroup = groups.find(group => group.sectionName === question.section);
-
-        if (existingGroup) {
-            existingGroup.questions.push(question);
-            return;
-        }
-
-        groups.push({
-            sectionName: question.section,
-            questions: [question]
-        });
-    });
-
-    return groups;
-
-}
-
-function createReportInsights(assessment) {
-
-    const normalizedCategories = normalizeReportCategories(assessment.categories);
-    const sectionInsights = normalizedCategories.map(category => ({
-        ...category,
-        interpretation: getSectionInterpretation(category.title, category.percentage)
-    }));
-
-    const { strongestSection, growthSection } = getReportSectionHighlights(normalizedCategories);
-
-    return {
-        overallSummary: getOverallInterpretation(assessment.overall.percentage),
-        sections: sectionInsights,
-        strongestSection,
-        growthSection,
-        strongestSectionExplanation: strongestSection ? getStrongestAreaExplanation(strongestSection.title, strongestSection.percentage) : "",
-        growthSectionExplanation: growthSection ? getGrowthAreaExplanation(growthSection.title, growthSection.percentage) : "",
-        actionPlan: buildActionPlan(assessment),
-        growthQuestionGroups: buildGrowthQuestionGroups()
-    };
-
-}
-
-function detectStrengths(categories) {
-
-    return categories.filter(category => category.percentage >= 75).map(category => ({
-        id: category.id,
-        title: category.title,
-        percentage: category.percentage,
-        level: category.level,
-        comment: category.comment
-    }));
-
-}
-
-function detectWeaknesses(categories) {
-
-    return categories.filter(category => category.percentage < 60).map(category => ({
-        id: category.id,
-        title: category.title,
-        percentage: category.percentage,
-        level: category.level,
-        comment: category.comment
-    }));
-
-}
-
-function generateRecommendations(assessment, strengths, weaknesses) {
-
-    const recommendations = [];
-
-    if (assessment.overall.percentage < 60) {
-        recommendations.push("اپنی روزمرہ کی عادتوں میں منظم اور گہری خودِ نگرانی شامل کریں۔");
-    }
-
-    weaknesses.forEach(item => {
-        recommendations.push(`"${item.title}" کے شعبے میں مزید توجہ اور مسلسل محاسبہ رکھیں۔`);
-    });
-
-    strengths.forEach(item => {
-        recommendations.push(`"${item.title}" کی اچھی سطح کو برقرار رکھنے کے لیے مسلسل عمل جاری رکھیں۔`);
-    });
-
-    return recommendations;
-
-}
-
-function createFinalReport() {
-
-    const assessment = generateAssessment();
-    const strengths = detectStrengths(assessment.categories);
-    const weaknesses = detectWeaknesses(assessment.categories);
-    const insights = createReportInsights(assessment);
-
-    return {
-        assessment,
-        strengths,
-        weaknesses,
-        recommendations: generateRecommendations(assessment, strengths, weaknesses),
-        insights
-    };
-
-}
-
 function submitQuestionnaire() {
 
-    saveAnswers();
-    isSubmitted = true;
-    const report = createFinalReport();
-    saveReport(report);
-    saveSession();
+    const report = application.completeAssessment();
+    updateHomeDashboardEntryVisibility();
+    refreshStorageStatusBanner();
     renderDashboard(report);
     return report;
-
-}
-
-function getReportSectionData(sectionName, normalizedCategories) {
-
-    const fallbackCategory = {
-        title: sectionName,
-        percentage: 0,
-        level: getPerformanceLevel(0),
-        raw: 0,
-        max: 0
-    };
-
-    const normalizedCategory = normalizedCategories.find(category => category.title === sectionName);
-
-    if (normalizedCategory) {
-        return {
-            ...normalizedCategory,
-            title: sectionName
-        };
-    }
-
-    return fallbackCategory;
-
-}
-
-function buildReportSections(categories) {
-
-    const normalizedCategories = normalizeReportCategories(categories);
-
-    return CANONICAL_REPORT_SECTIONS.map(sectionName => getReportSectionData(sectionName, normalizedCategories));
 
 }
 
@@ -1241,22 +1181,27 @@ function handleGrowthGroupToggle(event) {
 
 }
 
-function renderDashboard(report) {
+function renderDashboard(report, options = {}) {
+
+    const isHistorical = options.historical === true;
+    const snapshot = options.snapshot || null;
 
     showDashboardScreen();
 
     const dashboard = document.getElementById("dashboardScreen");
     const overall = report.assessment.overall;
-    const categories = report.assessment.categories;
-    const reportSections = buildReportSections(categories);
-    const insights = report.insights || createReportInsights(report.assessment);
-    const rawScores = calculateRawScores();
+    const presentation = isHistorical && snapshot
+        ? application.getHistoricalDashboardPresentation(report, snapshot)
+        : application.getDashboardPresentation(report);
+    const { reportSections, insights, rawScores } = presentation;
     const overallScoreLabel = rawScores.overall.max ? `${rawScores.overall.raw}/${rawScores.overall.max}` : `${overall.percentage}%`;
-    const assessmentDate = new Date().toLocaleDateString("ur-PK", {
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-    });
+    const assessmentDate = isHistorical && snapshot
+        ? formatAssessmentDate(snapshot.createdAt)
+        : new Date().toLocaleDateString("ur-PK", {
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+        });
 
     const strongestSection = insights.strongestSection || { title: "—", percentage: 0 };
     const growthSection = insights.growthSection || { title: "—", percentage: 0 };
@@ -1404,11 +1349,16 @@ function renderDashboard(report) {
 
             <section class="report-card report-footer">
                 <div class="report-card-head"><span class="report-card-icon">✦</span><h3>معیار</h3></div>
-                <p class="report-summary-text">معیار<br>اسلامی محاسبۂ نفس<br>Version ${APP_VERSION}</p>
+                <p class="report-summary-text">معیار<br>اسلامی محاسبۂ نفس<br>ورژن ${APP_VERSION}</p>
             </section>
 
             <div class="navigation">
-                <button id="restartBtn" class="secondary-btn">دوبارہ جائزہ لیں</button>
+                ${isHistorical
+                    ? `<button id="historyReportBackBtn" class="secondary-btn">تاریخ جائزے</button>`
+                    : `<button id="restartBtn" class="secondary-btn">دوبارہ جائزہ لیں</button>`}
+                <button id="openHistoryFromReportBtn" class="secondary-btn">ترقی کا وقت خط</button>
+                <button id="openHomeFromReportBtn" class="secondary-btn">مرکزی صفحہ</button>
+                <button id="openProgressFromReportBtn" class="secondary-btn">سفرِ ترقی</button>
                 <button id="printBtn" class="primary-btn">رپورٹ پرنٹ کریں</button>
             </div>
         </div>`;
@@ -1416,7 +1366,16 @@ function renderDashboard(report) {
     dashboard.removeEventListener("click", handleGrowthGroupToggle);
     dashboard.addEventListener("click", handleGrowthGroupToggle);
 
-    document.getElementById("restartBtn")?.addEventListener("click", startQuestionnaire);
+    if (isHistorical) {
+        document.getElementById("historyReportBackBtn")?.addEventListener("click", openAssessmentHistory);
+    }
+    else {
+        document.getElementById("restartBtn")?.addEventListener("click", startQuestionnaire);
+    }
+
+    document.getElementById("openHistoryFromReportBtn")?.addEventListener("click", openAssessmentHistory);
+    document.getElementById("openHomeFromReportBtn")?.addEventListener("click", openPersonalHomeDashboard);
+    document.getElementById("openProgressFromReportBtn")?.addEventListener("click", openProgressJourney);
     document.getElementById("printBtn")?.addEventListener("click", printReport);
 
 }
@@ -1424,18 +1383,6 @@ function renderDashboard(report) {
 function printReport() {
 
     window.print();
-
-}
-
-function showDashboard() {
-
-    return null;
-
-}
-
-function showReport(reportData) {
-
-    return reportData;
 
 }
 

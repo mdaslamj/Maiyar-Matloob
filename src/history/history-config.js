@@ -1,0 +1,3 @@
+export const HISTORY_MAX_SNAPSHOTS = 100;
+
+export const HISTORY_SNAPSHOT_SCHEMA_VERSION = 1;

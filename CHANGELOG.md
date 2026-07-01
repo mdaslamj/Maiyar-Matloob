@@ -42,7 +42,42 @@ Version 1.0.1 focuses on report integrity, session reliability, Urdu UX consiste
 
 ---
 
-## [1.0.0] — Initial Release
+## [2.0.0] — 2026-07-02
+
+### Product Completion Release
+
+Version 2.0 delivers the full personal self-development platform and a comprehensive polish pass. Assessment content, scoring, report calculations, and protected engine logic remain unchanged.
+
+### Added
+
+- **Growth Intelligence** — Trend, Action, Feedback engines; سفرِ ترقی; reassessment planner
+- **Continuous Muhasabah** — مرکزی صفحہ, reflection journal, ترقی کا وقت خط, personal insights
+- **Application APIs** — `getGrowthBundle()`, dashboard, timeline, journal, insights, reassessment plan
+- **Storage safety** — corruption/quota detection with Urdu user messages
+- **Documentation** — architecture, user flow, developer onboarding, release readiness
+
+### Changed
+
+- **Version 2.0.0** — application and report footer
+- **UX consistency** — unified Urdu terminology (ترقی کا وقت خط, اولویت, ناکافی معلومات)
+- **Accessibility** — skip link, main landmark, ARIA, reduced motion, keyboard toggles
+- **Performance** — growth pipeline caching; batched bundle for UI renders
+- **Security** — HTML escaping for journal content in timeline
+
+### Fixed
+
+- **Triple pipeline execution** on home dashboard — now single `getGrowthBundle()` call
+- **Silent storage failures** — surfaced via status banner where detectable
+- **Print layout** — home dashboard hidden when printing
+- **Dead code** — removed unused UI stubs
+
+### Governance
+
+- `questionnaire.json` — **not modified**
+- Scoring / assessment / report / trend / action / feedback calculations — **not modified**
+- History snapshot schema — **not modified**
+
+---
 
 - 50-question Urdu RTL self-assessment (محاسبۂ نفس)
 - Welcome, questionnaire, and printable report flows

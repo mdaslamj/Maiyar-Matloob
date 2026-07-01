@@ -176,6 +176,19 @@ Test on latest stable versions where possible.
 
 ---
 
+## UI — Version 2.0 Screens (2.0.0+)
+
+- [ ] **مرکزی صفحہ** opens and shows last assessment, priorities, insights, reassessment plan
+- [ ] **ترقی کا وقت خط** shows assessments and reflections chronologically
+- [ ] **سفرِ ترقی** shows trend summary, action plan, and feedback
+- [ ] Journal save/delete works; content does not affect scores
+- [ ] `getGrowthBundle()` screens load without console errors
+- [ ] Storage status banner appears on corruption simulation (optional manual test)
+- [ ] Skip link focuses main content
+- [ ] Home dashboard hidden in print view
+
+---
+
 ## Sign-Off
 
 | Field | Value |
