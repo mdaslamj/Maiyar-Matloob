@@ -195,7 +195,8 @@ class ApplicationService {
                 trendResult,
                 feedbackResult
             ),
-            snapshots
+            snapshots,
+            maiyaarInsights: computeMaiyaarInsights(this._getCommunityInsightInput())
         };
 
     }

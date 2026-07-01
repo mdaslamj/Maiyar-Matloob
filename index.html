@@ -31,191 +31,51 @@
 
     <section id="welcomeScreen" class="welcome-screen">
 
-        <div class="welcome-card">
+        <div class="welcome-shell">
 
-            <div class="welcome-brand">
-
-                <div class="welcome-icon">✦</div>
-
-                <div>
-
-                    <div class="brand-kicker">
-
-                        معیار
-
+            <header class="welcome-brand-block">
+                <div class="welcome-brand">
+                    <div class="welcome-icon" aria-hidden="true">✦</div>
+                    <div>
+                        <div class="brand-kicker">معیار</div>
+                        <h1>محاسبۂ نفس</h1>
+                        <h2>بر اساس معیارِ مطلوب</h2>
                     </div>
-
-                    <h1>
-
-                        محاسبۂ نفس
-
-                    </h1>
-
-                    <h2>
-
-                        بر اساس معیارِ مطلوب
-
-                    </h2>
-
                 </div>
+                <p class="intro">یہ سوالنامہ آپ کی روحانی و اخلاقی سطح کا خودِ محاسبہ کرنے کے لیے تیار کیا گیا ہے۔</p>
+            </header>
 
-            </div>
+            <div id="welcomeDashboard" class="welcome-dashboard" aria-live="polite"></div>
 
-            <p class="intro">
-
-                یہ سوالنامہ آپ کی روحانی و اخلاقی سطح کا خودِ محاسبہ کرنے کے لیے تیار کیا گیا ہے۔
-                براہِ کرم ہر سوال کا جواب مکمل دیانت داری اور سچائی سے دیں۔
-
-            </p>
-
-            <div class="infoBox">
-
-                <div>
-
-                    <strong>
-
-                        سوالات
-
-                    </strong>
-
-                    <br>
-
-                    50
-
+            <details class="welcome-meta-panel">
+                <summary>سوالنامے کی معلومات</summary>
+                <div class="welcome-meta-grid">
+                    <div class="ui-card ui-card--compact">
+                        <strong>سوالات</strong>
+                        <span>50</span>
+                    </div>
+                    <div class="ui-card ui-card--compact">
+                        <strong>متوقع وقت</strong>
+                        <span>20–25 منٹ</span>
+                    </div>
                 </div>
-
-                <div>
-
-                    <strong>
-
-                        متوقع وقت
-
-                    </strong>
-
-                    <br>
-
-                    20–25 منٹ
-
+                <div class="responseScale">
+                    <h3>جوابات کا معیار</h3>
+                    <ul>
+                        <li>ہمیشہ</li>
+                        <li>اکثر</li>
+                        <li>کبھی کبھار</li>
+                        <li>کبھی نہیں</li>
+                    </ul>
                 </div>
-
-            </div>
-
-            <div class="responseScale">
-
-                <h3>
-
-                    جوابات کا معیار
-
-                </h3>
-
-                <ul>
-
-                    <li>ہمیشہ</li>
-
-                    <li>اکثر</li>
-
-                    <li>کبھی کبھار</li>
-
-                    <li>کبھی نہیں</li>
-
-                </ul>
-
-            </div>
-
-            <button id="startButton" class="primary-btn full-width-btn" disabled>
-
-                شروع کریں
-
-            </button>
-
-            <section id="incompleteAssessmentSection" class="welcome-action-section welcome-action-section--priority" hidden aria-live="polite">
-
-                <h3 class="welcome-section-heading">Incomplete Assessment</h3>
-
-                <p class="welcome-section-desc">
-
-                    Your in-progress assessment is saved. Continue where you left off, or start fresh.
-
-                </p>
-
-                <div class="welcome-action-buttons">
-
-                    <button id="continueSessionBtn" type="button" class="primary-btn btn-with-icon full-width-btn">
-
-                        <span class="btn-icon" aria-hidden="true">▶</span>
-
-                        <span>Continue Assessment</span>
-
-                    </button>
-
-                    <button id="restartSessionBtn" type="button" class="secondary-btn btn-with-icon full-width-btn">
-
-                        <span class="btn-icon" aria-hidden="true">↺</span>
-
-                        <span>Start New Assessment</span>
-
-                    </button>
-
-                </div>
-
-            </section>
-
-            <section class="welcome-action-section">
-
-                <h3 class="welcome-section-heading">Maiyaar-e-Matloob Insights & Trends</h3>
-
-                <p class="welcome-section-desc">
-
-                    View personal growth trends and community implementation insights.
-
-                </p>
-
-                <button id="openProgressBtn" type="button" class="nav-btn btn-with-icon full-width-btn">
-
-                    <span class="btn-icon" aria-hidden="true">📈</span>
-
-                    <span>Open Insights & Trends</span>
-
-                </button>
-
-            </section>
-
-            <section class="welcome-action-section">
-
-                <h3 class="welcome-section-heading">Assessment History</h3>
-
-                <p class="welcome-section-desc">
-
-                    View your previous assessments and saved reports.
-
-                </p>
-
-                <button id="openHistoryBtn" type="button" class="nav-btn btn-with-icon full-width-btn">
-
-                    <span class="btn-icon" aria-hidden="true">📚</span>
-
-                    <span>Open Assessment History</span>
-
-                </button>
-
-            </section>
-
-            <button id="openHomeDashboardBtn" type="button" class="nav-btn full-width-btn" style="display:none;">
-
-                Home Dashboard
-
-            </button>
+            </details>
 
             <p id="questionnaireLoadingMessage" class="questionnaire-load-status" aria-live="polite">
-
                 سوالنامہ لوڈ ہو رہا ہے...
-
             </p>
 
-            <div id="questionnaireErrorMessage" class="questionnaire-load-error" role="alert" aria-live="assertive" style="display:none;">
-
+            <div id="questionnaireErrorMessage" class="questionnaire-load-error" role="alert" aria-live="assertive" hidden>
                 معذرت، محاسبۂ نفس کا سوالنامہ لوڈ نہیں ہو سکا۔ براہِ کرم صفحہ دوبارہ لوڈ کریں یا منتظم سے رابطہ کریں۔
-
             </div>
 
         </div>
@@ -224,7 +84,7 @@
 
     <section id="questionnaireScreen"
              class="questionnaire-shell"
-             style="display:none;">
+             hidden>
 
         <div class="progressHeader">
 
@@ -287,22 +147,22 @@
 
     <section id="homeDashboardScreen"
              class="home-dashboard-screen"
-             style="display:none;">
+             hidden>
     </section>
 
     <section id="progressScreen"
              class="progress-screen"
-             style="display:none;">
+             hidden>
     </section>
 
     <section id="historyScreen"
              class="history-screen"
-             style="display:none;">
+             hidden>
     </section>
 
     <section id="dashboardScreen"
              class="dashboard-screen"
-             style="display:none;">
+             hidden>
     </section>
 
     </main>

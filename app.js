@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.1.0 — Insights & Trends
+// Version 2.1.0 — Product Refinement Sprint
 // Production Architecture
 // =======================================
 
@@ -20,16 +20,22 @@ const UI_LABELS = {
     NAV_PREVIOUS: "← Previous",
     NAV_NEXT: "Next →",
     NAV_FINISH: "Finish →",
-    PROGRESS_REVIEW: "Maiyaar-e-Matloob Insights & Trends",
+    DASHBOARD_TITLE: "Maiyar-e-Matloob",
+    PROGRESS_REVIEW: "Insights & Trends",
+    MAIYAAR_INSIGHTS: "Maiyaar-e-Matloob Insights",
     ASSESSMENT_HISTORY: "Assessment History",
     CONTINUE_ASSESSMENT: "Continue Assessment",
     START_NEW_ASSESSMENT: "Start New Assessment",
+    START_ASSESSMENT: "Start Assessment",
     OPEN_PROGRESS_REVIEW: "Open Insights & Trends",
+    OPEN_MAIYAAR_INSIGHTS: "Open Maiyaar-e-Matloob Insights",
     OPEN_ASSESSMENT_HISTORY: "Open Assessment History",
-    BACK: "Back",
+    OPEN_PERSONAL_HOME: "Personal Dashboard",
+    BACK: "← Back",
     PRINT_REPORT: "Print Report",
     EMPTY_PROGRESS: "No completed assessments yet.",
-    EMPTY_HISTORY: "No assessment history available."
+    EMPTY_HISTORY: "No assessment history available.",
+    EMPTY_INSIGHTS: "Complete a new assessment to populate anonymous implementation insights."
 };
 
 const UI_ICONS = {
@@ -37,7 +43,10 @@ const UI_ICONS = {
     RESTART: "↺",
     PROGRESS: "📈",
     HISTORY: "📚",
-    PRINT: "🖨"
+    PRINT: "🖨",
+    INSIGHTS: "✦",
+    HOME: "🏠",
+    START: "✓"
 };
 
 const SCREEN_IDS = [
@@ -119,7 +128,7 @@ function activateScreen(screenId, options = {}) {
         }
 
         const isActive = id === screenId;
-        element.style.display = isActive ? "block" : "none";
+        element.hidden = !isActive;
         element.setAttribute("aria-hidden", isActive ? "false" : "true");
     });
 
@@ -155,15 +164,57 @@ function renderScreenToolbar(options = {}) {
         title,
         backId = "screenBackBtn",
         backLabel = UI_LABELS.BACK,
-        actionsHtml = ""
+        actionsHtml = "",
+        printable = false
     } = options;
 
     return `
-        <div class="screen-toolbar" role="toolbar" aria-label="${escapeHtml(title)} toolbar">
+        <div class="screen-toolbar${printable ? "" : " no-print"}" role="toolbar" aria-label="${escapeHtml(title)} toolbar">
             <button type="button" id="${backId}" class="secondary-btn screen-toolbar-back">${backLabel}</button>
             <h2 class="screen-toolbar-title">${escapeHtml(title)}</h2>
             <div class="screen-toolbar-actions">${actionsHtml}</div>
         </div>`;
+
+}
+
+function renderUICard(options = {}) {
+
+    const {
+        type = "summary",
+        title = "",
+        kicker = "",
+        bodyHtml = "",
+        footerHtml = "",
+        className = ""
+    } = options;
+
+    return `
+        <article class="ui-card ui-card--${type} ${className}">
+            ${title || kicker ? `
+                <header class="ui-card__header">
+                    ${kicker ? `<span class="ui-card__kicker">${escapeHtml(kicker)}</span>` : ""}
+                    ${title ? `<h3 class="ui-card__title">${escapeHtml(title)}</h3>` : ""}
+                </header>` : ""}
+            <div class="ui-card__body">${bodyHtml}</div>
+            ${footerHtml ? `<footer class="ui-card__footer">${footerHtml}</footer>` : ""}
+        </article>`;
+
+}
+
+function renderMetricRow(label, value, meta = "") {
+
+    return `
+        <div class="ui-metric">
+            <span class="ui-metric__label">${escapeHtml(label)}</span>
+            <strong class="ui-metric__value">${escapeHtml(value)}</strong>
+            ${meta ? `<span class="ui-metric__meta">${escapeHtml(meta)}</span>` : ""}
+        </div>`;
+
+}
+
+function renderQuickActionButton(id, icon, label, className = "nav-btn") {
+
+    return `<button type="button" id="${id}" class="${className} btn-with-icon ui-action-btn"><span class="btn-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span></button>`;
 
 }
 
@@ -231,7 +282,7 @@ async function loadQuestionnaire() {
 
         updateProgress();
         setQuestionnaireLoadState("ready");
-        updateHomeDashboardEntryVisibility();
+        renderWelcomeDashboard();
         refreshStorageStatusBanner();
         restorePersistedState();
 
@@ -249,32 +300,26 @@ async function loadQuestionnaire() {
 
 function setQuestionnaireLoadState(state) {
 
-    const startButton = document.getElementById("startButton");
     const loadingMessage = document.getElementById("questionnaireLoadingMessage");
     const errorMessage = document.getElementById("questionnaireErrorMessage");
 
     if (loadingMessage) {
-        loadingMessage.style.display = state === "loading" ? "block" : "none";
+        loadingMessage.hidden = state !== "loading";
     }
 
     if (errorMessage) {
-        errorMessage.style.display = state === "error" ? "block" : "none";
+        errorMessage.hidden = state !== "error";
     }
 
-    if (startButton) {
-        startButton.disabled = state !== "ready";
+    if (state === "ready") {
+        renderWelcomeDashboard();
     }
 
 }
 
 function bindEvents() {
 
-    document.getElementById("startButton")?.addEventListener("click", startQuestionnaire);
-    document.getElementById("openHomeDashboardBtn")?.addEventListener("click", openPersonalHomeDashboard);
-    document.getElementById("openHistoryBtn")?.addEventListener("click", openAssessmentHistory);
-    document.getElementById("openProgressBtn")?.addEventListener("click", openProgressJourney);
-    document.getElementById("continueSessionBtn")?.addEventListener("click", continueQuestionnaire);
-    document.getElementById("restartSessionBtn")?.addEventListener("click", restartQuestionnaireFromWelcome);
+    document.getElementById("welcomeDashboard")?.addEventListener("click", handleWelcomeDashboardClick);
     document.getElementById("previousBtn")?.addEventListener("click", previousQuestion);
     document.getElementById("nextBtn")?.addEventListener("click", nextQuestion);
     document.getElementById("questionContainer")?.addEventListener("change", handleAnswerSelection);
@@ -282,14 +327,200 @@ function bindEvents() {
 
 }
 
-function updateHomeDashboardEntryVisibility() {
+function handleWelcomeDashboardClick(event) {
 
-    const snapshots = application.listAssessmentHistory();
-    const homeButton = document.getElementById("openHomeDashboardBtn");
+    const button = event.target.closest("button[data-action]");
 
-    if (homeButton) {
-        homeButton.style.display = snapshots.length ? "" : "none";
+    if (!button || button.disabled) {
+        return;
     }
+
+    switch (button.getAttribute("data-action")) {
+        case "start-assessment":
+            startQuestionnaire();
+            break;
+        case "continue-assessment":
+            continueQuestionnaire();
+            break;
+        case "restart-assessment":
+            restartQuestionnaireFromWelcome();
+            break;
+        case "open-history":
+            openAssessmentHistory();
+            break;
+        case "open-progress":
+            openProgressJourney();
+            break;
+        case "open-insights":
+            openMaiyaarInsights();
+            break;
+        case "open-home":
+            openPersonalHomeDashboard();
+            break;
+        default:
+            break;
+    }
+
+}
+
+function renderWelcomeDashboard() {
+
+    const container = document.getElementById("welcomeDashboard");
+    const startButtonReady = application.questionnaireReady && application.questionnaire.length > 0;
+
+    if (!container) {
+        return;
+    }
+
+    if (!startButtonReady) {
+        container.innerHTML = `
+            <div class="ui-card ui-card--status">
+                <div class="ui-card__body">
+                    <p class="ui-empty">Dashboard will appear once the questionnaire is ready.</p>
+                </div>
+            </div>`;
+        return;
+    }
+
+    const bundle = application.getGrowthBundle();
+    const dashboard = getDomainData(bundle.dashboard);
+    const growthDashboard = getDomainData(bundle.growthDashboard);
+    const overview = growthDashboard.overview || {};
+    const maiyaarInsights = getDomainData(bundle.maiyaarInsights);
+    const snapshots = bundle.snapshots || [];
+    const hasIncompleteSession = application.hasIncompleteSession();
+    const latestSnapshot = snapshots[0];
+    const overallTrend = overview.overallTrend || {};
+    const overallDistribution = computeOverallDistribution(maiyaarInsights.questionInsights || []);
+
+    const assessmentActions = hasIncompleteSession
+        ? `
+            ${renderQuickActionButton("continueSessionBtn", UI_ICONS.CONTINUE, UI_LABELS.CONTINUE_ASSESSMENT, "primary-btn")}
+            ${renderQuickActionButton("restartSessionBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "secondary-btn")}`
+        : renderQuickActionButton("startButton", UI_ICONS.START, UI_LABELS.START_ASSESSMENT, "primary-btn");
+
+    container.innerHTML = `
+        <div class="dashboard-grid dashboard-grid--primary">
+            ${renderUICard({
+                type: "action",
+                title: "Assessment",
+                kicker: UI_LABELS.DASHBOARD_TITLE,
+                bodyHtml: `<p class="ui-card__text">Begin or resume your muhasabah assessment.</p>`,
+                footerHtml: `<div class="ui-action-stack">${assessmentActions}</div>`
+            })}
+
+            ${renderUICard({
+                type: "status",
+                title: "Today's Status",
+                bodyHtml: `
+                    <div class="ui-metric-grid">
+                        ${renderMetricRow("Current Level", dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—", dashboard.currentOverallPercentage != null ? `${dashboard.currentOverallPercentage}%` : "")}
+                        ${renderMetricRow("Last Assessment", dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—")}
+                        ${renderMetricRow("Progress", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : "—", overview.overallTrend?.deltaPercentage != null ? `${overview.overallTrend.deltaPercentage}% change` : "More assessments needed")}
+                    </div>`
+            })}
+        </div>
+
+        <div class="dashboard-grid dashboard-grid--secondary">
+            ${renderUICard({
+                type: "history",
+                title: "Assessment History",
+                bodyHtml: `
+                    <div class="ui-metric-grid ui-metric-grid--compact">
+                        ${renderMetricRow("Total Assessments", String(snapshots.length))}
+                        ${renderMetricRow("Latest Assessment", latestSnapshot ? formatAssessmentDate(latestSnapshot.createdAt) : "—", latestSnapshot ? `${latestSnapshot.overallPercentage}%` : "")}
+                    </div>`,
+                footerHtml: renderQuickActionButton("openHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.OPEN_ASSESSMENT_HISTORY)
+            })}
+
+            ${renderUICard({
+                type: "trend",
+                title: "Insights & Trends",
+                bodyHtml: `
+                    <div class="ui-metric-grid ui-metric-grid--compact">
+                        ${renderMetricRow("Overall Trend", getTrendClassificationLabel(overallTrend.classification || "Insufficient Data"))}
+                        ${renderMetricRow("Consistency", overview.consistencyScore != null ? `${overview.consistencyScore}%` : "—")}
+                        ${renderMetricRow("Recommendations", growthDashboard.recommendedFocus?.length ? `${growthDashboard.recommendedFocus.length} focus areas` : "—")}
+                    </div>`,
+                footerHtml: renderQuickActionButton("openProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.OPEN_PROGRESS_REVIEW)
+            })}
+
+            ${renderUICard({
+                type: "insight",
+                title: UI_LABELS.MAIYAAR_INSIGHTS,
+                bodyHtml: maiyaarInsights.hasSufficientData
+                    ? `
+                        <p class="ui-card__text">Anonymous aggregated implementation patterns across completed assessments.</p>
+                        <div class="ui-metric-grid ui-metric-grid--compact">
+                            ${renderMetricRow("Always", `${overallDistribution.always}%`)}
+                            ${renderMetricRow("Often", `${overallDistribution.often}%`)}
+                            ${renderMetricRow("Sometimes", `${overallDistribution.sometimes}%`)}
+                            ${renderMetricRow("Never", `${overallDistribution.never}%`)}
+                        </div>`
+                    : `<p class="ui-empty">${UI_LABELS.EMPTY_INSIGHTS}</p>`,
+                footerHtml: renderQuickActionButton("openInsightsBtn", UI_ICONS.INSIGHTS, UI_LABELS.OPEN_MAIYAAR_INSIGHTS)
+            })}
+        </div>
+
+        <div class="dashboard-grid dashboard-grid--actions">
+            ${renderUICard({
+                type: "quick",
+                title: "Quick Actions",
+                bodyHtml: `
+                    <div class="ui-quick-actions">
+                        ${renderQuickActionButton("quickHomeBtn", UI_ICONS.HOME, UI_LABELS.OPEN_PERSONAL_HOME)}
+                        ${renderQuickActionButton("quickHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)}
+                        ${renderQuickActionButton("quickProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW)}
+                        ${renderQuickActionButton("quickInsightsBtn", UI_ICONS.INSIGHTS, UI_LABELS.MAIYAAR_INSIGHTS)}
+                    </div>`
+            })}
+        </div>`;
+
+    const actionMap = {
+        startButton: "start-assessment",
+        continueSessionBtn: "continue-assessment",
+        restartSessionBtn: "restart-assessment",
+        openHistoryBtn: "open-history",
+        openProgressBtn: "open-progress",
+        openInsightsBtn: "open-insights",
+        quickHomeBtn: "open-home",
+        quickHistoryBtn: "open-history",
+        quickProgressBtn: "open-progress",
+        quickInsightsBtn: "open-insights"
+    };
+
+    Object.entries(actionMap).forEach(([elementId, action]) => {
+        const element = document.getElementById(elementId);
+
+        if (element) {
+            element.setAttribute("data-action", action);
+        }
+    });
+
+}
+
+function computeOverallDistribution(questionInsights = []) {
+
+    if (!questionInsights.length) {
+        return { always: 0, often: 0, sometimes: 0, never: 0 };
+    }
+
+    const totals = questionInsights.reduce((accumulator, question) => {
+        accumulator.always += question.distribution?.always || 0;
+        accumulator.often += question.distribution?.often || 0;
+        accumulator.sometimes += question.distribution?.sometimes || 0;
+        accumulator.never += question.distribution?.never || 0;
+        return accumulator;
+    }, { always: 0, often: 0, sometimes: 0, never: 0 });
+
+    const count = questionInsights.length;
+
+    return {
+        always: Number((totals.always / count).toFixed(1)),
+        often: Number((totals.often / count).toFixed(1)),
+        sometimes: Number((totals.sometimes / count).toFixed(1)),
+        never: Number((totals.never / count).toFixed(1))
+    };
 
 }
 
@@ -394,7 +625,7 @@ function renderPersonalHomeDashboard() {
     screen.innerHTML = `
         <div class="home-dashboard-page">
             ${renderScreenToolbar({
-                title: "Home",
+                title: UI_LABELS.OPEN_PERSONAL_HOME,
                 backId: "homeBackBtn",
                 actionsHtml: `
                     ${renderToolbarAction("homeProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW)}
@@ -526,6 +757,13 @@ function handleJournalFormSubmit(event) {
 
 }
 
+function openMaiyaarInsights() {
+
+    progressInsightsTab = "maiyaar";
+    openProgressJourney();
+
+}
+
 function openProgressJourney() {
 
     showProgressScreen();
@@ -604,152 +842,147 @@ function renderDistributionBlock(distribution = {}) {
 
 }
 
-function renderCommunitySummaryList(title, items, getLabel) {
+function renderCommunityInsightsPanel(maiyaarInsightsInput) {
 
-    const markup = items?.length
-        ? items.map(item => `
-            <article class="progress-section-card">
-                <div class="progress-section-title">${escapeHtml(getLabel(item))}</div>
-            </article>`).join("")
-        : `<div class="progress-empty">No data available yet.</div>`;
-
-    return `
-        <div class="progress-subsection">
-            <h4>${escapeHtml(title)}</h4>
-            <div class="progress-section-list">${markup}</div>
-        </div>`;
-
-}
-
-function renderCommunityPracticeCard(practice) {
-
-    return `
-        <article class="progress-section-card">
-            <div class="progress-section-title">${escapeHtml(practice.practiceName)}</div>
-            <div class="progress-section-label">${escapeHtml(practice.implementationStatusLabel || practice.implementationStatus || "")}</div>
-            ${renderDistributionBlock(practice.distribution)}
-        </article>`;
-
-}
-
-function renderCommunityQuestionCard(question) {
-
-    return `
-        <article class="progress-section-card">
-            <div class="progress-section-title">${escapeHtml(question.questionText)}</div>
-            <div class="progress-section-label">${escapeHtml(question.section || "")}</div>
-            ${renderDistributionBlock(question.distribution)}
-        </article>`;
-
-}
-
-function renderCommunityTrendCard(trend) {
-
-    const firstAlways = trend.firstPeriod?.distribution?.always ?? "—";
-    const latestAlways = trend.latestPeriod?.distribution?.always ?? "—";
-    const deltaAlways = trend.delta?.always;
-
-    return `
-        <article class="progress-section-card">
-            <div class="progress-section-title">${escapeHtml(trend.practiceName)}</div>
-            <div class="progress-section-metrics">
-                <span>Always: ${firstAlways}% → ${latestAlways}%</span>
-                <strong>${deltaAlways != null ? `${deltaAlways >= 0 ? "+" : ""}${deltaAlways}%` : "—"}</strong>
-            </div>
-            <div class="progress-section-label">${escapeHtml(trend.trend || "stable")}</div>
-        </article>`;
-
-}
-
-function renderCommunityInsightsPanel() {
-
-    const insightsResult = application.getMaiyaarInsights();
-    const insights = getDomainData(insightsResult);
+    const insights = maiyaarInsightsInput || getDomainData(application.getGrowthBundle().maiyaarInsights);
     const assessmentCount = insights.assessmentCount || 0;
 
     if (!insights.hasSufficientData || assessmentCount < 1) {
         return `
-            <section class="empty-state-card">
-                <p>Community insights appear after completed assessments include answer records. Complete a new assessment to populate this view.</p>
+            <section class="ui-card ui-card--status">
+                <div class="ui-card__body">
+                    <p class="ui-empty">${UI_LABELS.EMPTY_INSIGHTS}</p>
+                </div>
             </section>`;
     }
 
-    const summary = insights.summary || {};
-    const priorities = insights.educationalPriorities || [];
-    const practiceInsights = insights.practiceInsights || [];
-    const sectionInsights = insights.sectionInsights || [];
-    const implementationTrends = insights.implementationTrends || [];
     const questionInsights = insights.questionInsights || [];
-
-    const priorityMarkup = priorities.length
-        ? priorities.map(priority => `
-            <article class="progress-section-card">
-                <div class="progress-section-label">#${priority.rank}</div>
-                <div class="progress-section-title">${escapeHtml(priority.practiceName)}</div>
-                <div class="progress-section-meta">Positive: ${priority.positiveRate}% · Never: ${priority.neverRate}%</div>
-            </article>`).join("")
-        : `<div class="progress-empty">No educational priorities identified with current thresholds.</div>`;
+    const sectionInsights = insights.sectionInsights || [];
+    const practiceInsights = insights.practiceInsights || [];
+    const implementationTrends = insights.implementationTrends || [];
+    const overallDistribution = computeOverallDistribution(questionInsights);
+    const topPracticed = [...questionInsights]
+        .sort((left, right) => (right.distribution?.always || 0) - (left.distribution?.always || 0))
+        .slice(0, 10);
+    const leastPracticed = [...questionInsights]
+        .sort((left, right) => (right.distribution?.never || 0) - (left.distribution?.never || 0))
+        .slice(0, 10);
+    const improvingPractices = implementationTrends.filter(item => item.trend === "improving").slice(0, 10);
+    const decliningPractices = implementationTrends.filter(item => item.trend === "declining").slice(0, 10);
+    const snapshotPractices = practiceInsights.slice(0, 12);
 
     return `
-        <section class="progress-header">
-            <p>Community implementation analysis across ${assessmentCount} saved assessment${assessmentCount === 1 ? "" : "s"}.</p>
-        </section>
-
-        <section class="progress-sections">
-            <h3>Community Summary</h3>
-            ${renderCommunitySummaryList("Most Implemented Practices", summary.mostImplementedPractices, item => `${item.practiceName} (${item.positiveRate}%)`)}
-            ${renderCommunitySummaryList("Least Implemented Practices", summary.leastImplementedPractices, item => `${item.practiceName} (${item.positiveRate}%)`)}
-            ${renderCommunitySummaryList("Improving Practices", summary.improvingPractices, item => item.practiceName)}
-            ${renderCommunitySummaryList("Declining Practices", summary.decliningPractices, item => item.practiceName)}
-            ${renderCommunitySummaryList("Stable Practices", summary.stablePractices, item => item.practiceName)}
-            ${renderCommunitySummaryList("Practices Requiring Immediate Attention", summary.practicesRequiringImmediateAttention, item => `${item.practiceName} (${item.implementationStatusLabel || item.implementationStatus})`)}
-        </section>
-
-        <section class="progress-sections">
-            <h3>Educational Priorities</h3>
-            <div class="progress-section-list">${priorityMarkup}</div>
-        </section>
-
-        <section class="progress-sections">
-            <h3>Practice Implementation</h3>
-            <div class="progress-section-list">
-                ${practiceInsights.length
-                    ? practiceInsights.map(renderCommunityPracticeCard).join("")
-                    : `<div class="progress-empty">No practice data available.</div>`}
+        <section class="ui-card ui-card--summary">
+            <header class="ui-card__header">
+                <span class="ui-card__kicker">Anonymous Aggregated Patterns</span>
+                <h3 class="ui-card__title">${UI_LABELS.MAIYAAR_INSIGHTS}</h3>
+            </header>
+            <div class="ui-card__body">
+                <p class="ui-card__text">Understanding how well the teachings are actually being practiced across ${assessmentCount} completed assessment${assessmentCount === 1 ? "" : "s"}. No individual answers are shown.</p>
             </div>
         </section>
 
-        <section class="progress-sections">
-            <h3>Section Implementation</h3>
-            <div class="progress-section-list">
-                ${sectionInsights.length
-                    ? sectionInsights.map(section => `
-                        <article class="progress-section-card">
-                            <div class="progress-section-title">${escapeHtml(section.sectionTitle)}</div>
-                            <div class="progress-section-label">${escapeHtml(section.implementationStatusLabel || section.implementationStatus || "")}</div>
-                            ${renderDistributionBlock(section.distribution)}
-                        </article>`).join("")
-                    : `<div class="progress-empty">No section data available.</div>`}
-            </div>
-        </section>
+        ${renderUICard({
+            type: "insight",
+            title: "Overall Implementation Distribution",
+            bodyHtml: renderDistributionBlock(overallDistribution)
+        })}
 
-        <section class="progress-sections">
-            <h3>Implementation Trends</h3>
-            <div class="progress-section-list">
-                ${implementationTrends.length
-                    ? implementationTrends.map(renderCommunityTrendCard).join("")
-                    : `<div class="progress-empty">At least two assessments with answer records are required for trends.</div>`}
-            </div>
-        </section>
+        <div class="dashboard-grid dashboard-grid--split">
+            ${renderUICard({
+                type: "trend",
+                title: "Top 10 Most Practiced Teachings",
+                bodyHtml: renderRankedQuestionList(topPracticed, "always")
+            })}
+            ${renderUICard({
+                type: "trend",
+                title: "Top 10 Least Practiced Teachings",
+                bodyHtml: renderRankedQuestionList(leastPracticed, "never")
+            })}
+        </div>
 
-        <section class="progress-sections">
-            <h3>Question Distributions</h3>
-            <div class="progress-section-list">
-                ${questionInsights.length
-                    ? questionInsights.map(renderCommunityQuestionCard).join("")
-                    : `<div class="progress-empty">No question data available.</div>`}
-            </div>
-        </section>`;
+        <div class="dashboard-grid dashboard-grid--split">
+            ${renderUICard({
+                type: "summary",
+                title: "Practices Improving Over Time",
+                bodyHtml: renderPracticeTrendList(improvingPractices, "No improving practices identified yet.")
+            })}
+            ${renderUICard({
+                type: "summary",
+                title: "Practices Declining",
+                bodyHtml: renderPracticeTrendList(decliningPractices, "No declining practices identified yet.")
+            })}
+        </div>
+
+        ${renderUICard({
+            type: "insight",
+            title: "Section-wise Implementation",
+            bodyHtml: `
+                <div class="ui-stack">
+                    ${sectionInsights.length
+                        ? sectionInsights.map(section => `
+                            <article class="ui-list-card">
+                                <div class="ui-list-card__title">${escapeHtml(section.sectionTitle)}</div>
+                                <div class="ui-list-card__meta">${escapeHtml(section.implementationStatusLabel || section.implementationStatus || "")}</div>
+                                ${renderDistributionBlock(section.distribution)}
+                            </article>`).join("")
+                        : `<p class="ui-empty">No section data available.</p>`}
+                </div>`
+        })}
+
+        ${renderUICard({
+            type: "status",
+            title: "Community Implementation Snapshot",
+            bodyHtml: `
+                <div class="ui-stack ui-stack--compact">
+                    ${snapshotPractices.length
+                        ? snapshotPractices.map(practice => `
+                            <article class="ui-list-card">
+                                <div class="ui-list-card__title">${escapeHtml(practice.practiceName)}</div>
+                                ${renderDistributionBlock(practice.distribution)}
+                            </article>`).join("")
+                        : `<p class="ui-empty">No practice snapshot available.</p>`}
+                </div>`
+        })}`;
+
+}
+
+function renderRankedQuestionList(questions, metricKey) {
+
+    if (!questions.length) {
+        return `<p class="ui-empty">No data available yet.</p>`;
+    }
+
+    return `
+        <ol class="ui-ranked-list">
+            ${questions.map((question, index) => `
+                <li class="ui-ranked-list__item">
+                    <span class="ui-ranked-list__rank">${index + 1}</span>
+                    <div class="ui-ranked-list__content">
+                        <strong>${escapeHtml(question.questionText)}</strong>
+                        <span>${metricKey === "always" ? "Always" : "Never"}: ${question.distribution?.[metricKey] ?? 0}%</span>
+                    </div>
+                </li>`).join("")}
+        </ol>`;
+
+}
+
+function renderPracticeTrendList(trends, emptyMessage) {
+
+    if (!trends.length) {
+        return `<p class="ui-empty">${emptyMessage}</p>`;
+    }
+
+    return `
+        <ul class="ui-ranked-list ui-ranked-list--plain">
+            ${trends.map(trend => `
+                <li class="ui-ranked-list__item">
+                    <div class="ui-ranked-list__content">
+                        <strong>${escapeHtml(trend.practiceName)}</strong>
+                        <span>Always: ${trend.firstPeriod?.distribution?.always ?? "—"}% → ${trend.latestPeriod?.distribution?.always ?? "—"}%</span>
+                    </div>
+                </li>`).join("")}
+        </ul>`;
 
 }
 
@@ -874,16 +1107,18 @@ function renderInsightsTabBar(activeTab) {
                 class="insights-tab${activeTab === "personal" ? " is-active" : ""}"
                 role="tab"
                 aria-selected="${activeTab === "personal"}"
-                aria-controls="insightsPersonalPanel">
+                aria-controls="insightsPersonalPanel"
+                tabindex="${activeTab === "personal" ? "0" : "-1"}">
                 Personal
             </button>
             <button type="button"
-                id="insightsCommunityTab"
-                class="insights-tab${activeTab === "community" ? " is-active" : ""}"
+                id="insightsMaiyaarTab"
+                class="insights-tab${activeTab === "maiyaar" ? " is-active" : ""}"
                 role="tab"
-                aria-selected="${activeTab === "community"}"
-                aria-controls="insightsCommunityPanel">
-                Community
+                aria-selected="${activeTab === "maiyaar"}"
+                aria-controls="insightsMaiyaarPanel"
+                tabindex="${activeTab === "maiyaar" ? "0" : "-1"}">
+                ${UI_LABELS.MAIYAAR_INSIGHTS}
             </button>
         </div>`;
 
@@ -891,14 +1126,33 @@ function renderInsightsTabBar(activeTab) {
 
 function bindInsightsTabHandlers() {
 
-    document.getElementById("insightsPersonalTab")?.addEventListener("click", () => {
-        progressInsightsTab = "personal";
-        renderGrowthJourney();
-    });
+    const tabs = [
+        { id: "insightsPersonalTab", tab: "personal" },
+        { id: "insightsMaiyaarTab", tab: "maiyaar" }
+    ];
 
-    document.getElementById("insightsCommunityTab")?.addEventListener("click", () => {
-        progressInsightsTab = "community";
-        renderGrowthJourney();
+    tabs.forEach(({ id, tab }) => {
+        const element = document.getElementById(id);
+
+        if (!element) {
+            return;
+        }
+
+        element.addEventListener("click", () => {
+            progressInsightsTab = tab;
+            renderGrowthJourney();
+        });
+
+        element.addEventListener("keydown", (event) => {
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+                return;
+            }
+
+            event.preventDefault();
+            progressInsightsTab = tab === "personal" ? "maiyaar" : "personal";
+            renderGrowthJourney();
+            document.getElementById(progressInsightsTab === "personal" ? "insightsPersonalTab" : "insightsMaiyaarTab")?.focus();
+        });
     });
 
 }
@@ -908,8 +1162,9 @@ function renderGrowthJourney() {
     const progressScreen = document.getElementById("progressScreen");
     const bundle = application.getGrowthBundle();
     const activeTab = progressInsightsTab;
-    const panelContent = activeTab === "community"
-        ? renderCommunityInsightsPanel()
+    const maiyaarInsights = getDomainData(bundle.maiyaarInsights);
+    const panelContent = activeTab === "maiyaar"
+        ? renderCommunityInsightsPanel(maiyaarInsights)
         : renderPersonalProgressPanel(bundle);
 
     progressScreen.innerHTML = `
@@ -925,15 +1180,17 @@ function renderGrowthJourney() {
             <div id="insightsPersonalPanel"
                 class="insights-tab-panel${activeTab === "personal" ? " is-active" : ""}"
                 role="tabpanel"
+                aria-labelledby="insightsPersonalTab"
                 ${activeTab === "personal" ? "" : 'hidden'}>
                 ${activeTab === "personal" ? panelContent : ""}
             </div>
 
-            <div id="insightsCommunityPanel"
-                class="insights-tab-panel${activeTab === "community" ? " is-active" : ""}"
+            <div id="insightsMaiyaarPanel"
+                class="insights-tab-panel${activeTab === "maiyaar" ? " is-active" : ""}"
                 role="tabpanel"
-                ${activeTab === "community" ? "" : 'hidden'}>
-                ${activeTab === "community" ? panelContent : ""}
+                aria-labelledby="insightsMaiyaarTab"
+                ${activeTab === "maiyaar" ? "" : 'hidden'}>
+                ${activeTab === "maiyaar" ? panelContent : ""}
             </div>
         </div>`;
 
@@ -1061,11 +1318,16 @@ function renderAssessmentHistory() {
 function showWelcomeScreen() {
 
     activateScreen("welcomeScreen", {
-        announce: "خوش آمدید صفحہ",
-        focusTargetId: "startButton"
+        announce: "خوش آمدید صفحہ"
     });
 
-    updateHomeDashboardEntryVisibility();
+    renderWelcomeDashboard();
+
+    const focusTarget = document.querySelector("#welcomeDashboard button[data-action]");
+
+    if (focusTarget) {
+        focusTarget.focus();
+    }
 
 }
 
@@ -1123,7 +1385,7 @@ function handleDeleteSnapshot(snapshotId) {
     }
 
     application.deleteHistoricalSnapshot(snapshotId);
-    updateHomeDashboardEntryVisibility();
+    renderWelcomeDashboard();
     renderAssessmentHistory();
 
 }
@@ -1150,38 +1412,8 @@ function handleClearHistory() {
     }
 
     application.clearAssessmentHistory();
-    updateHomeDashboardEntryVisibility();
+    renderWelcomeDashboard();
     renderAssessmentHistory();
-
-}
-
-function showSessionResumePrompt() {
-
-    const incompleteSection = document.getElementById("incompleteAssessmentSection");
-    const startButton = document.getElementById("startButton");
-
-    if (incompleteSection) {
-        incompleteSection.hidden = false;
-    }
-
-    if (startButton) {
-        startButton.hidden = true;
-    }
-
-}
-
-function hideSessionResumePrompt() {
-
-    const incompleteSection = document.getElementById("incompleteAssessmentSection");
-    const startButton = document.getElementById("startButton");
-
-    if (incompleteSection) {
-        incompleteSection.hidden = true;
-    }
-
-    if (startButton) {
-        startButton.hidden = false;
-    }
 
 }
 
@@ -1190,14 +1422,12 @@ function restorePersistedState() {
     const result = application.restorePersistedState();
 
     if (result.type === "restore-report") {
-        hideSessionResumePrompt();
+        renderWelcomeDashboard();
         renderDashboard(result.report);
         return;
     }
 
-    if (result.type === "resume-prompt") {
-        showSessionResumePrompt();
-    }
+    renderWelcomeDashboard();
 
 }
 
@@ -1207,7 +1437,6 @@ function continueQuestionnaire() {
         return;
     }
 
-    hideSessionResumePrompt();
     showQuestionnaireScreen();
     renderQuestion();
     updateProgress();
@@ -1216,7 +1445,6 @@ function continueQuestionnaire() {
 
 function restartQuestionnaireFromWelcome() {
 
-    hideSessionResumePrompt();
     startQuestionnaire();
 
 }
@@ -1227,7 +1455,6 @@ function startQuestionnaire() {
         return;
     }
 
-    hideSessionResumePrompt();
     showQuestionnaireScreen();
     application.restartWorkflow();
     renderQuestion();
@@ -1465,7 +1692,7 @@ function getPerformanceLevelLabel(level) {
 function submitQuestionnaire() {
 
     const report = application.completeAssessment();
-    updateHomeDashboardEntryVisibility();
+    renderWelcomeDashboard();
     refreshStorageStatusBanner();
     renderDashboard(report);
     return report;
@@ -1539,6 +1766,13 @@ function renderDashboard(report, options = {}) {
 
     dashboard.innerHTML = `
         <div class="dashboard-report">
+            ${renderScreenToolbar({
+                title: isHistorical ? UI_LABELS.ASSESSMENT_HISTORY : "Assessment Report",
+                backId: isHistorical ? "historyReportToolbarBackBtn" : "reportBackBtn",
+                actionsHtml: `<button type="button" id="printBtn" class="primary-btn btn-with-icon no-print">${UI_ICONS.PRINT} ${UI_LABELS.PRINT_REPORT}</button>`,
+                printable: true
+            })}
+
             <section class="report-card report-cover">
                 <h1>معیار</h1>
                 <h2>محاسبۂ نفس</h2>
@@ -1651,7 +1885,7 @@ function renderDashboard(report, options = {}) {
 
             <section class="report-card report-card-blue">
                 <div class="report-card-head"><span class="report-card-icon">🙏</span><h3>دعا</h3></div>
-                <p class="report-summary-text" style="font-size:17px; line-height:1.9;">
+                <p class="report-summary-text report-summary-text--emphasis">
                     رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِن لَّدُنكَ رَحْمَةً ۚ إِنَّكَ أَنتَ الْوَهَّابُ
                 </p>
                 <p class="report-summary-text">
@@ -1665,14 +1899,13 @@ function renderDashboard(report, options = {}) {
                 <p class="report-summary-text">معیار<br>اسلامی محاسبۂ نفس<br>ورژن ${APP_VERSION}</p>
             </section>
 
-            <div class="navigation report-navigation">
+            <div class="navigation report-navigation no-print">
                 ${isHistorical
                     ? `<button id="historyReportBackBtn" class="secondary-btn">${UI_LABELS.ASSESSMENT_HISTORY}</button>`
                     : `<button id="restartBtn" class="secondary-btn">${UI_ICONS.RESTART} ${UI_LABELS.START_NEW_ASSESSMENT}</button>`}
                 <button id="openHistoryFromReportBtn" class="nav-btn btn-with-icon">${UI_ICONS.HISTORY} ${UI_LABELS.ASSESSMENT_HISTORY}</button>
-                <button id="openHomeFromReportBtn" class="nav-btn">Home</button>
+                <button id="openHomeFromReportBtn" class="nav-btn">${UI_LABELS.OPEN_PERSONAL_HOME}</button>
                 <button id="openProgressFromReportBtn" class="nav-btn btn-with-icon">${UI_ICONS.PROGRESS} ${UI_LABELS.PROGRESS_REVIEW}</button>
-                <button id="printBtn" class="primary-btn btn-with-icon">${UI_ICONS.PRINT} ${UI_LABELS.PRINT_REPORT}</button>
             </div>
         </div>`;
 
@@ -1680,9 +1913,11 @@ function renderDashboard(report, options = {}) {
     dashboard.addEventListener("click", handleGrowthGroupToggle);
 
     if (isHistorical) {
+        document.getElementById("historyReportToolbarBackBtn")?.addEventListener("click", openAssessmentHistory);
         document.getElementById("historyReportBackBtn")?.addEventListener("click", openAssessmentHistory);
     }
     else {
+        document.getElementById("reportBackBtn")?.addEventListener("click", showWelcomeScreen);
         document.getElementById("restartBtn")?.addEventListener("click", startQuestionnaire);
     }
 
