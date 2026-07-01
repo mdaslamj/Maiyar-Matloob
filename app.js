@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.1.4 — Single-Screen Questionnaire
+// Version 2.1.5 — Zero-Scrolling Questionnaire
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.1.4";
+const APP_VERSION = "2.1.5";
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
 
@@ -1426,7 +1426,7 @@ function createQuestionMarkup(question) {
         const checked = savedValue != null && savedValue === Number(option.value) ? "checked" : "";
 
         return `
-            <label class="option">
+            <label class="option option--card">
                 <input type="radio" name="answer" value="${option.value}" ${checked}>
                 <span class="option-text">${option.label}</span>
             </label>`;
@@ -1442,11 +1442,11 @@ function createQuestionMarkup(question) {
         </div>`;
 
     return `
-        <div class="question-card question-card--single-screen">
+        <div class="question-card question-card--zero-scroll">
             <div class="question-id">${question.id || question.standardId || ""}</div>
             <div class="question-text">${question.question}</div>
             ${explanationMarkup}
-            <fieldset class="answers">
+            <fieldset class="answers answers--grid">
                 <legend class="visually-hidden">جواب منتخب کریں</legend>
                 ${options}
             </fieldset>
