@@ -86,62 +86,27 @@
              class="questionnaire-shell"
              hidden>
 
-        <div class="progressHeader">
-
-            <div class="progressMeta">
-
-                <span class="progress-label">سوال</span>
-
-                <span class="progress-count">
-
+        <header class="questionnaire-header">
+            <div class="questionnaire-header__row">
+                <p class="questionnaire-header__count">
+                    Question
                     <span id="currentQuestion">1</span>
-
                     /
-
                     <span id="totalQuestions">50</span>
-
-                </span>
-
+                </p>
+                <p id="percentage" class="progress-percent" aria-live="polite">2%</p>
             </div>
-
-            <div id="percentage" class="progress-percent" aria-live="polite">
-
-                2%
-
+            <div class="progress-track">
+                <progress
+                        id="progressBar"
+                        value="1"
+                        max="50"
+                        aria-label="سوالنامے کی پیش رفت">
+                </progress>
             </div>
+        </header>
 
-        </div>
-
-        <div class="progress-track">
-
-            <progress
-                    id="progressBar"
-                    value="1"
-                    max="50"
-                    aria-label="سوالنامے کی پیش رفت">
-            </progress>
-
-        </div>
-
-        <div id="questionContainer" aria-live="polite">
-
-        </div>
-
-        <div class="navigation">
-
-            <button id="previousBtn" class="secondary-btn" aria-label="Previous question">
-
-                ← Previous
-
-            </button>
-
-            <button id="nextBtn" class="primary-btn" aria-label="Next question">
-
-                Next →
-
-            </button>
-
-        </div>
+        <div id="questionContainer" aria-live="polite"></div>
 
     </section>
 

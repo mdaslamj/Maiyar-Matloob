@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.1.3 — Dashboard Simplification
+// Version 2.1.4 — Single-Screen Questionnaire
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.1.3";
+const APP_VERSION = "2.1.4";
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
 
@@ -320,10 +320,24 @@ function setQuestionnaireLoadState(state) {
 function bindEvents() {
 
     document.getElementById("welcomeDashboard")?.addEventListener("click", handleWelcomeDashboardClick);
-    document.getElementById("previousBtn")?.addEventListener("click", previousQuestion);
-    document.getElementById("nextBtn")?.addEventListener("click", nextQuestion);
+    document.getElementById("questionContainer")?.addEventListener("click", handleQuestionContainerClick);
     document.getElementById("questionContainer")?.addEventListener("change", handleAnswerSelection);
-    document.getElementById("questionContainer")?.addEventListener("click", handleExplanationToggle);
+
+}
+
+function handleQuestionContainerClick(event) {
+
+    if (event.target.closest("#previousBtn")) {
+        previousQuestion();
+        return;
+    }
+
+    if (event.target.closest("#nextBtn")) {
+        nextQuestion();
+        return;
+    }
+
+    handleExplanationToggle(event);
 
 }
 
@@ -1421,14 +1435,14 @@ function createQuestionMarkup(question) {
     const explanation = question?.explanation || "";
     const explanationMarkup = `
         <div class="question-explanation">
-            <button type="button" class="explanation-toggle" aria-expanded="false" aria-controls="questionExplanationPanel">▼ یہ سوال کس چیز کا جائزہ لیتا ہے؟</button>
+            <button type="button" class="explanation-toggle" aria-expanded="false" aria-controls="questionExplanationPanel">▼ Why is this question asked?</button>
             <div id="questionExplanationPanel" class="explanation-panel" hidden>
                 <div class="explanation-body">${explanation}</div>
             </div>
         </div>`;
 
     return `
-        <div class="question-card">
+        <div class="question-card question-card--single-screen">
             <div class="question-id">${question.id || question.standardId || ""}</div>
             <div class="question-text">${question.question}</div>
             ${explanationMarkup}
@@ -1437,6 +1451,10 @@ function createQuestionMarkup(question) {
                 ${options}
             </fieldset>
             <div class="answer-validation" role="alert" aria-live="assertive" hidden>${ANSWER_VALIDATION_MESSAGE}</div>
+            <div class="question-card__nav navigation" role="toolbar" aria-label="Question navigation">
+                <button type="button" id="previousBtn" class="secondary-btn" aria-label="Previous question">${UI_LABELS.NAV_PREVIOUS}</button>
+                <button type="button" id="nextBtn" class="primary-btn" aria-label="Next question">${UI_LABELS.NAV_NEXT}</button>
+            </div>
         </div>`;
 
 }
@@ -1586,14 +1604,19 @@ function updateProgress() {
     const nextButton = document.getElementById("nextBtn");
     const previousButton = document.getElementById("previousBtn");
 
-    nextButton.textContent = application.currentQuestion === totalQuestions - 1
-        ? UI_LABELS.NAV_FINISH
-        : UI_LABELS.NAV_NEXT;
-    nextButton.setAttribute(
-        "aria-label",
-        application.currentQuestion === totalQuestions - 1 ? "Finish assessment" : "Next question"
-    );
-    previousButton.textContent = UI_LABELS.NAV_PREVIOUS;
+    if (nextButton) {
+        nextButton.textContent = application.currentQuestion === totalQuestions - 1
+            ? UI_LABELS.NAV_FINISH
+            : UI_LABELS.NAV_NEXT;
+        nextButton.setAttribute(
+            "aria-label",
+            application.currentQuestion === totalQuestions - 1 ? "Finish assessment" : "Next question"
+        );
+    }
+
+    if (previousButton) {
+        previousButton.textContent = UI_LABELS.NAV_PREVIOUS;
+    }
 
 }
 
