@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.1.0 — Product Refinement Sprint
+// Version 2.1.1 — Mobile Responsive Refinement
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.1.1";
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
 
@@ -44,7 +44,7 @@ const UI_ICONS = {
     PROGRESS: "📈",
     HISTORY: "📚",
     PRINT: "🖨",
-    INSIGHTS: "✦",
+    INSIGHTS: "✨",
     HOME: "🏠",
     START: "✓"
 };
@@ -212,9 +212,9 @@ function renderMetricRow(label, value, meta = "") {
 
 }
 
-function renderQuickActionButton(id, icon, label, className = "nav-btn") {
+function renderQuickActionButton(id, icon, label, className = "ui-quick-action-btn") {
 
-    return `<button type="button" id="${id}" class="${className} btn-with-icon ui-action-btn"><span class="btn-icon" aria-hidden="true">${icon}</span><span>${escapeHtml(label)}</span></button>`;
+    return `<button type="button" id="${id}" class="${className} btn-with-icon"><span class="btn-icon" aria-hidden="true">${icon}</span><span class="ui-btn-label">${escapeHtml(label)}</span></button>`;
 
 }
 
@@ -395,62 +395,40 @@ function renderWelcomeDashboard() {
 
     const assessmentActions = hasIncompleteSession
         ? `
-            ${renderQuickActionButton("continueSessionBtn", UI_ICONS.CONTINUE, UI_LABELS.CONTINUE_ASSESSMENT, "primary-btn")}
-            ${renderQuickActionButton("restartSessionBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "secondary-btn")}`
-        : renderQuickActionButton("startButton", UI_ICONS.START, UI_LABELS.START_ASSESSMENT, "primary-btn");
+            ${renderQuickActionButton("continueSessionBtn", UI_ICONS.CONTINUE, UI_LABELS.CONTINUE_ASSESSMENT, "primary-btn ui-assessment-btn")}
+            <p class="ui-action-divider" aria-hidden="true">or</p>
+            ${renderQuickActionButton("restartSessionBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "secondary-btn ui-assessment-btn")}`
+        : renderQuickActionButton("startButton", UI_ICONS.START, UI_LABELS.START_ASSESSMENT, "primary-btn ui-assessment-btn");
 
     container.innerHTML = `
-        <div class="dashboard-grid dashboard-grid--primary">
+        <div class="dashboard-grid dashboard-grid--responsive">
             ${renderUICard({
                 type: "action",
+                className: "dashboard-card dashboard-card--assessment",
                 title: "Assessment",
-                kicker: UI_LABELS.DASHBOARD_TITLE,
-                bodyHtml: `<p class="ui-card__text">Begin or resume your muhasabah assessment.</p>`,
-                footerHtml: `<div class="ui-action-stack">${assessmentActions}</div>`
+                bodyHtml: `<p class="ui-card__text">Begin or resume your Muhasabah.</p>`,
+                footerHtml: `<div class="ui-action-stack ui-action-stack--assessment">${assessmentActions}</div>`
             })}
 
             ${renderUICard({
                 type: "status",
+                className: "dashboard-card dashboard-card--status",
                 title: "Today's Status",
                 bodyHtml: `
-                    <div class="ui-metric-grid">
+                    <div class="ui-metric-grid ui-metric-grid--compact">
                         ${renderMetricRow("Current Level", dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—", dashboard.currentOverallPercentage != null ? `${dashboard.currentOverallPercentage}%` : "")}
                         ${renderMetricRow("Last Assessment", dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—")}
                         ${renderMetricRow("Progress", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : "—", overview.overallTrend?.deltaPercentage != null ? `${overview.overallTrend.deltaPercentage}% change` : "More assessments needed")}
                     </div>`
             })}
-        </div>
-
-        <div class="dashboard-grid dashboard-grid--secondary">
-            ${renderUICard({
-                type: "history",
-                title: "Assessment History",
-                bodyHtml: `
-                    <div class="ui-metric-grid ui-metric-grid--compact">
-                        ${renderMetricRow("Total Assessments", String(snapshots.length))}
-                        ${renderMetricRow("Latest Assessment", latestSnapshot ? formatAssessmentDate(latestSnapshot.createdAt) : "—", latestSnapshot ? `${latestSnapshot.overallPercentage}%` : "")}
-                    </div>`,
-                footerHtml: renderQuickActionButton("openHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.OPEN_ASSESSMENT_HISTORY)
-            })}
-
-            ${renderUICard({
-                type: "trend",
-                title: "Insights & Trends",
-                bodyHtml: `
-                    <div class="ui-metric-grid ui-metric-grid--compact">
-                        ${renderMetricRow("Overall Trend", getTrendClassificationLabel(overallTrend.classification || "Insufficient Data"))}
-                        ${renderMetricRow("Consistency", overview.consistencyScore != null ? `${overview.consistencyScore}%` : "—")}
-                        ${renderMetricRow("Recommendations", growthDashboard.recommendedFocus?.length ? `${growthDashboard.recommendedFocus.length} focus areas` : "—")}
-                    </div>`,
-                footerHtml: renderQuickActionButton("openProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.OPEN_PROGRESS_REVIEW)
-            })}
 
             ${renderUICard({
                 type: "insight",
+                className: "dashboard-card dashboard-card--maiyaar",
                 title: UI_LABELS.MAIYAAR_INSIGHTS,
                 bodyHtml: maiyaarInsights.hasSufficientData
                     ? `
-                        <p class="ui-card__text">Anonymous aggregated implementation patterns across completed assessments.</p>
+                        <p class="ui-card__text ui-card__text--compact">Anonymous aggregated implementation patterns.</p>
                         <div class="ui-metric-grid ui-metric-grid--compact">
                             ${renderMetricRow("Always", `${overallDistribution.always}%`)}
                             ${renderMetricRow("Often", `${overallDistribution.often}%`)}
@@ -458,20 +436,44 @@ function renderWelcomeDashboard() {
                             ${renderMetricRow("Never", `${overallDistribution.never}%`)}
                         </div>`
                     : `<p class="ui-empty">${UI_LABELS.EMPTY_INSIGHTS}</p>`,
-                footerHtml: renderQuickActionButton("openInsightsBtn", UI_ICONS.INSIGHTS, UI_LABELS.OPEN_MAIYAAR_INSIGHTS)
+                footerHtml: renderQuickActionButton("openInsightsBtn", UI_ICONS.INSIGHTS, UI_LABELS.OPEN_MAIYAAR_INSIGHTS, "ui-card-link-btn")
             })}
-        </div>
 
-        <div class="dashboard-grid dashboard-grid--actions">
+            ${renderUICard({
+                type: "trend",
+                className: "dashboard-card dashboard-card--trends",
+                title: "Insights & Trends",
+                bodyHtml: `
+                    <div class="ui-metric-grid ui-metric-grid--compact">
+                        ${renderMetricRow("Overall Trend", getTrendClassificationLabel(overallTrend.classification || "Insufficient Data"))}
+                        ${renderMetricRow("Consistency", overview.consistencyScore != null ? `${overview.consistencyScore}%` : "—")}
+                        ${renderMetricRow("Recommendations", growthDashboard.recommendedFocus?.length ? `${growthDashboard.recommendedFocus.length} focus areas` : "—")}
+                    </div>`,
+                footerHtml: renderQuickActionButton("openProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.OPEN_PROGRESS_REVIEW, "ui-card-link-btn")
+            })}
+
+            ${renderUICard({
+                type: "history",
+                className: "dashboard-card dashboard-card--history",
+                title: "Assessment History",
+                bodyHtml: `
+                    <div class="ui-metric-grid ui-metric-grid--compact">
+                        ${renderMetricRow("Total Assessments", String(snapshots.length))}
+                        ${renderMetricRow("Latest Assessment", latestSnapshot ? formatAssessmentDate(latestSnapshot.createdAt) : "—", latestSnapshot ? `${latestSnapshot.overallPercentage}%` : "")}
+                    </div>`,
+                footerHtml: renderQuickActionButton("openHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.OPEN_ASSESSMENT_HISTORY, "ui-card-link-btn")
+            })}
+
             ${renderUICard({
                 type: "quick",
+                className: "dashboard-card dashboard-card--quick",
                 title: "Quick Actions",
                 bodyHtml: `
-                    <div class="ui-quick-actions">
-                        ${renderQuickActionButton("quickHomeBtn", UI_ICONS.HOME, UI_LABELS.OPEN_PERSONAL_HOME)}
+                    <div class="ui-quick-actions ui-quick-actions--stack">
                         ${renderQuickActionButton("quickHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)}
                         ${renderQuickActionButton("quickProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW)}
                         ${renderQuickActionButton("quickInsightsBtn", UI_ICONS.INSIGHTS, UI_LABELS.MAIYAAR_INSIGHTS)}
+                        ${renderQuickActionButton("quickHomeBtn", UI_ICONS.HOME, UI_LABELS.OPEN_PERSONAL_HOME)}
                     </div>`
             })}
         </div>`;
