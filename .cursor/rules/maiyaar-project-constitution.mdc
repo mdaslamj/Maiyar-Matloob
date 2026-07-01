@@ -1,0 +1,658 @@
+---
+description: Authoritative engineering constitution for the Maiyaar (معیار) project — governs all development, architecture, and AI collaboration decisions
+alwaysApply: true
+---
+
+# Maiyaar Project Constitution
+
+**Document type:** Engineering Constitution  
+**Project:** Maiyaar (معیار) — محاسبۂ نفس  
+**Status:** Authoritative — single source of truth for developers and AI assistants  
+**Scope:** Product, architecture, data, security, process, and collaboration  
+
+This document is **not** user documentation, a README, or API reference. It defines the principles, boundaries, and decision framework that govern how Maiyaar is designed, built, extended, and maintained.
+
+---
+
+## 1. Project Identity
+
+### Vision
+
+Maiyaar will become the trusted standard for structured Islamic self-accountability (*muhāsaba al-nafs*), enabling individuals and communities to measure their spiritual and moral development against **معیارِ مطلوب** with clarity, dignity, and actionable insight — without compromising privacy, sincerity, or Islamic values.
+
+### Mission
+
+To deliver a reflection-first digital experience that helps Urdu-speaking Muslims honestly assess their relationship with Allah, their character, their worship, and their contribution to the deen — then translate that assessment into meaningful, practical improvement.
+
+### Objectives
+
+1. Provide a rigorous, standardized 50-question assessment aligned with معیارِ مطلوب.
+2. Generate reports that educate, encourage, and guide — never shame, rank, or expose.
+3. Preserve assessment integrity across versions, platforms, and future enhancements.
+4. Maintain a lightweight, accessible experience suitable for personal and organizational use.
+5. Evolve toward modular, privacy-respecting architecture without abandoning core philosophy.
+6. Enable longitudinal growth (history, trends, personalized action) only when it serves sincere self-improvement.
+
+### Core Purpose
+
+Maiyaar exists to facilitate **honest self-reflection** (*muhāsaba*) in the light of an Islamic standard — not to gamify piety, produce social comparisons, or replace scholarly guidance. Every feature must serve the user's inward journey and outward amal (action).
+
+---
+
+## 2. Product Philosophy
+
+### What Maiyaar Is
+
+- A **spiritual self-assessment instrument** grounded in Islamic categories of life and conduct.
+- A **private reflection tool** for individuals seeking structured muhāsaba.
+- A **reporting companion** that explains scores, highlights strengths, identifies growth areas, and suggests practical steps.
+- A **standards-aligned product** where content (questions, sections, explanations, improvements) reflects معیارِ مطلوب.
+- A **Urdu-first, RTL-native** experience designed for its primary audience's language and reading culture.
+
+### What Maiyaar Is Not
+
+- Not a social network, leaderboard, or community ranking platform.
+- Not a substitute for scholars, mentors, tarbiyah programs, or professional counseling.
+- Not a diagnostic or clinical mental-health tool.
+- Not an surveillance or compliance system for organizations to monitor individuals without consent.
+- Not a gamified habit tracker focused on streaks, badges, or extrinsic motivation alone.
+- Not a generic personality quiz or Western psychometric instrument dressed in Islamic vocabulary.
+
+### Continuous Improvement Philosophy
+
+Improvement in Maiyaar is modeled on *tazkiyah* (purification of the soul): gradual, sincere, and sustained. The product must:
+
+- Emphasize **progress over perfection**.
+- Present weaknesses as **invitations to change**, not verdicts on worth.
+- Offer **actionable, bounded recommendations** (e.g., 30-day plans) rather than overwhelming lists.
+- Support **re-assessment over time** as a means of tracking sincere effort, not competitive scoring.
+
+### Reflection-First Approach
+
+Every user journey begins and ends in reflection:
+
+1. **Before:** Set intention (*niyyah*) for honest self-assessment.
+2. **During:** One question at a time; space for explanation; no pressure tactics.
+3. **After:** Report structured for contemplation — summary, section analysis, weak-question lessons, action plan, reflection prompts, and closing supplication.
+
+Features that interrupt, rush, or dilute this reflective arc require explicit constitutional review.
+
+---
+
+## 3. Core Values
+
+| Value | Meaning for Maiyaar |
+|-------|---------------------|
+| **Sincerity (*ikhlās*)** | The tool serves the user's relationship with Allah, not engagement metrics alone. |
+| **Honesty (*sidq*)** | Questions and reports encourage truthful self-answer; UX must not incentivize inflated scores. |
+| **Privacy (*satr*)** | Assessment data is sensitive; default posture is local, minimal, and user-controlled. |
+| **Dignity** | Language and design never humiliate; low scores trigger compassion and guidance. |
+| **Trustworthiness (*amānah*)** | Assessment content and scoring remain stable, auditable, and protected from casual change. |
+| **Accessibility** | Usable across devices, readable typography, respectful of RTL and Urdu conventions. |
+| **Simplicity** | Prefer clarity over feature abundance; every addition must earn its place. |
+| **Stewardship** | Code, content, and user data are held in trust; maintainability is a moral duty to future users. |
+
+---
+
+## 4. Islamic Design Principles
+
+1. **Tarbiyah over entertainment** — Design serves spiritual development, not distraction.
+2. **Adab in language** — Copy is respectful, measured, and avoids harsh or sensational tone.
+3. **Categories of deen** — Product structure mirrors Islamic domains: belief, worship, character, dawah, organizational life, and holistic purpose.
+4. **No riyā incentives** — Avoid features that encourage showing off scores or public performance of piety.
+5. **Supplication and reflection** — Reports include space for du'a and thoughtful introspection, not only metrics.
+6. **Gender-inclusive phrasing** — Question text accommodates male/female address where applicable (e.g., گزارتا/گزارتی).
+7. **Content fidelity** — Question meanings, section definitions, and improvement guidance must align with approved Islamic standards; theological changes require domain expert approval, not engineering discretion alone.
+8. **Humility in automation** — Algorithms suggest; they do not judge the user's standing before Allah.
+
+---
+
+## 5. User Experience Principles
+
+1. **One question at a time** — Reduce cognitive load; honor the seriousness of each item.
+2. **Progress visibility** — Users always know where they are (question N of 50, percentage complete).
+3. **Explanations on demand** — Context ("یہ سوال کس چیز کا جائزہ لیتا ہے؟") available without cluttering the primary task.
+4. **Consistent response scale** — Four-point frequency scale (ہمیشہ → کبھی نہیں) is a product invariant unless constitutionally amended.
+5. **Language consistency** — Primary UI in Urdu; secondary labels (e.g., navigation) should converge toward Urdu over time.
+6. **RTL-native layout** — Direction, alignment, typography, and reading order respect RTL conventions at every breakpoint.
+7. **Mobile-first resilience** — Questionnaire and report must remain usable on small screens and in print.
+8. **Calm visual design** — Professional, restrained palette; no anxiety-inducing patterns for low scores.
+9. **Recoverability** — Users should be able to resume, restart, and print without losing clarity on what each action does.
+10. **Accessibility** — Live regions for dynamic content, focus states, sufficient contrast, and touch-friendly targets.
+
+---
+
+## 6. Product Design Principles
+
+1. **Content drives structure** — Sections, reports, and action plans derive from the assessment model, not the reverse.
+2. **Report as a journey** — Cover → overall result → section detail → strengths → growth → weak-question lessons → action plan → reflection → du'a → footer.
+3. **Canonical section registry** — Display names, sort order, and identifiers must be single-sourced to prevent scoring/report drift.
+4. **Stable identifiers** — `id` (Q001–Q050) and `standardId` (M001–M050) are permanent keys for analytics, history, and trends.
+5. **Extend, don't replace** — New capabilities wrap around the assessment; they do not redefine it without governance approval.
+6. **Version transparency** — Users and operators can identify which assessment/report version produced a given result.
+7. **Offline-capable baseline** — Core assessment and report generation must remain functional without network dependency where feasible.
+
+---
+
+## 7. Engineering Principles
+
+1. **Simplicity first** — Choose the smallest solution that satisfies requirements.
+2. **No unnecessary dependencies** — Vanilla web platform capabilities are preferred until a dependency provides clear, sustained value.
+3. **Separation of concerns** — Content, scoring rules, presentation, persistence, and analytics must be logically separable even if physically co-located today.
+4. **Explicit over implicit** — Section mappings, thresholds, and storage keys must be documented and centralized.
+5. **Backward compatibility** — Stored answers and historical reports must remain interpretable across minor versions.
+6. **Fail gracefully** — Load errors, storage failures, and missing data must degrade to safe, understandable states.
+7. **Performance proportionality** — Optimize for 50 questions and one report, not hypothetical scale-first complexity.
+8. **Security by default** — Even a static client app must anticipate hosting, supply-chain, and future sync threats.
+
+---
+
+## 8. Software Architecture Principles
+
+1. **Layered architecture (target state)**
+
+   ```
+   Content Layer    → questionnaire, sections, explanations, improvements
+   Domain Layer     → scoring, assessment, report composition
+   Presentation     → screens, components, templates
+   Persistence      → local storage, future remote sync
+   Engines Layer    → analytics, feedback, trends, history, action
+   ```
+
+2. **Single responsibility per module** — Each module owns one bounded concern.
+3. **Immutable assessment snapshots** — Completed assessments should be stored as versioned snapshots, not recomputed from mutable rules without disclosure.
+4. **Event-friendly design** — Core lifecycle events (start, answer, complete, print, restart) should be emit-able for future engines.
+5. **Data down, events up** — Content flows downward; user actions emit events upward.
+6. **Progressive enhancement** — v1 static delivery remains valid; cloud features augment, never block, core flows.
+7. **Testability** — Scoring and report logic must be extractable and verifiable independent of DOM manipulation.
+
+---
+
+## 9. Current Architecture Overview
+
+*As of Version 1.0 — descriptive, not prescriptive for future refactors.*
+
+### Delivery Model
+
+Static single-page application: `index.html`, `app.js`, `style.css`, `questionnaire.json`. No build pipeline, no backend, no package manager.
+
+### Runtime Flow
+
+1. Browser loads `index.html` → `DOMContentLoaded` initializes `app.js`.
+2. `questionnaire.json` fetched via HTTP; questions and response scale populate in-memory state.
+3. Three screens: Welcome → Questionnaire (one question per view) → Dashboard (report).
+4. Answers persisted in `localStorage` under `mahasaba-nafs-answers`.
+5. On completion, scoring and report generation run in-process; HTML report injected into dashboard.
+6. Print via `window.print()` with dedicated print stylesheet.
+
+### State Model
+
+Global in-memory variables (`questionnaire`, `answers`, `currentQuestion`) plus partial `localStorage` persistence for answers only. No report persistence on refresh in v1.
+
+### Content Model
+
+Monolithic `questionnaire.json` contains metadata, response scale, and 50 questions each with `section`, `category`, `question`, `explanation`, `improvement`, and `options`. Scoring thresholds and report copy largely live in `app.js`.
+
+### Known Structural Characteristics
+
+- Monolithic application logic (~1,100 lines in `app.js`).
+- Section names exist in both content and code with historical mapping layers.
+- Conceptual split files (`sections.json`, `scoring.json`, `explanations.json`, `improvements.json`) are **not yet implemented** — responsibilities are embedded in `questionnaire.json` and `app.js`.
+- Authoring artifact `[final_questions.txt` exists outside runtime path and must not be treated as source of truth.
+
+---
+
+## 10. Future Architecture Vision
+
+Maiyaar evolves from a **static reflection instrument** into a **modular self-improvement platform** while preserving assessment integrity.
+
+### Target Capabilities
+
+- **Normalized content packages** — Versioned, separable content and scoring configuration.
+- **Engine plugins** — Analytics, feedback, trends, history, and action engines attach via stable interfaces.
+- **Optional cloud sync** — Firebase/Firestore or equivalent for authenticated history, not mandatory for core use.
+- **Canonical section registry** — One authoritative definition of sections, display names, and ordering shared by scoring, reports, and engines.
+- **Assessment snapshots** — Immutable records of answers + computed report at completion time, tagged with content and scoring version.
+- **Modular frontend** — Presentation separated from domain logic; templates/components replace monolithic HTML strings over time.
+
+### Non-Negotiable Constraints in Future Versions
+
+- Core 50-question assessment remains the philosophical center.
+- Privacy-first defaults persist unless user explicitly opts into cloud features.
+- Offline assessment and report generation remain supported.
+- Islamic design and reflection-first UX are never traded for engagement optimization.
+
+---
+
+## 11. Development Roadmap
+
+Roadmap items describe **intent and boundaries**, not implementation commitments. Sequencing may adjust; principles may not.
+
+### Version 1 (Current — Released)
+
+**Theme:** Foundation
+
+- 50-question Urdu RTL assessment aligned with معیارِ مطلوب.
+- Welcome, questionnaire, and dashboard report screens.
+- Client-side scoring, section breakdown, growth insights, 30-day action plan, print support.
+- Static deployment via GitHub / static hosting.
+- `localStorage` answer persistence.
+
+**Exit criteria:** User can complete assessment and receive printable report without backend.
+
+---
+
+### Version 1.0.1
+
+**Theme:** Integrity and stability
+
+- Normalize section identifiers across content, scoring, and report display (eliminate name drift).
+- Establish canonical section registry (inline or dedicated config — implementation TBD).
+- Resume-in-progress session UX (welcome screen detects saved answers).
+- Persist completed report snapshot locally for post-refresh viewing.
+- Remove or quarantine dead code paths and unused computed report fields.
+- Align UI language (navigation labels, consistency).
+- Document content versioning scheme.
+
+**Governance:** Section renames in content require approval; identifier normalization in code requires architecture review.
+
+---
+
+### Version 2 — Sprint 1
+
+**Theme:** Modularization without behavior change
+
+- Extract domain layer: scoring, assessment, report composition (no user-visible logic changes).
+- Extract presentation templates from monolithic render functions.
+- Introduce stable module boundaries and internal event hooks.
+- Define storage adapter interface (local first).
+- Add baseline automated tests for scoring and section aggregation.
+- Prepare content split strategy (`sections`, `scoring`, `explanations`, `improvements` — structure approved before migration).
+
+**Governance:** Scoring outputs must match v1 baseline test fixtures exactly.
+
+---
+
+### Version 2 — Sprint 2
+
+**Theme:** History and persistence
+
+- Implement **History Engine** (local): store timestamped assessment snapshots.
+- Resume, review past reports, restart from history list.
+- Assessment and content version tags on every snapshot.
+- IndexedDB or structured local storage strategy (adapter pattern).
+- Optional export (JSON/PDF enhancement beyond browser print).
+
+**Governance:** No cloud transmission in this sprint without explicit privacy review.
+
+---
+
+### Version 2 — Sprint 3
+
+**Theme:** Insight engines (local-first)
+
+- Implement **Trend Engine** (local): compare section/overall scores across assessments.
+- Implement **Action Engine**: structured action plans linked to weak questions and sections.
+- Implement **Analytics Engine** (local telemetry abstraction; optional anonymous aggregate if approved later).
+- Implement **Feedback Engine**: in-app feedback on questions/report quality, stored locally or submitted with consent.
+- Firebase/Firestore integration **optional spike** — only if privacy and security review passed; not required for sprint completion.
+
+**Governance:** Trend and action features must frame growth as personal muhāsaba, not ranking.
+
+---
+
+## 12. Module Responsibilities
+
+| Module / Area | Owns | Must Not Own |
+|---------------|------|--------------|
+| **Content (`questionnaire.json` and successors)** | Questions, scale labels, explanations, improvements, metadata, content version | Scoring thresholds, UI layout, persistence |
+| **Section Registry** | Canonical section IDs, display names, sort order, aliases | Question text, individual scores |
+| **Scoring Domain** | Raw score calculation, reverse scoring rules, aggregation, performance levels | DOM rendering, network calls |
+| **Report Composer** | Report structure, interpretation selection, action plan assembly | Direct question authoring |
+| **Presentation / UI** | Screens, navigation, responsive layout, print styles, accessibility | Business rules for scoring |
+| **Persistence Adapter** | Save/load answers, snapshots, preferences | Assessment methodology |
+| **History Engine** | Snapshot storage, retrieval, listing, deletion (user-initiated) | Live scoring rule changes retroactively applied silently |
+| **Trend Engine** | Cross-assessment comparison, deltas, visualizations | Social comparison across users |
+| **Action Engine** | Personalized plans, reminders (future), progress on actions | Redefining question meanings |
+| **Analytics Engine** | Event schema, dispatch, consent-aware collection | Raw answer content without explicit policy |
+| **Feedback Engine** | User feedback capture, correlation to question/report version | Automatic content modification from feedback |
+| **Infrastructure (future)** | Auth, sync, hosting, CI/CD | Product philosophy decisions |
+
+---
+
+## 13. Planned Engines
+
+Engines are **optional, bounded subsystems** that attach to core lifecycle events. They must not alter assessment content or scoring without governance approval.
+
+### Analytics Engine
+
+**Purpose:** Understand product usage patterns to improve UX and reliability.
+
+**Collects (subject to privacy policy):** session start, question progress milestones, completion, print, restart, errors — not answer values by default.
+
+**Must not:** Exfiltrate identifiable spiritual assessment content without explicit informed consent.
+
+---
+
+### Feedback Engine
+
+**Purpose:** Capture user feedback on question clarity, report usefulness, and technical issues.
+
+**Collects:** Free text, optional question/report version reference, optional section ID — submitted voluntarily.
+
+**Must not:** Auto-modify protected content based on feedback without human and domain review.
+
+---
+
+### Trend Engine
+
+**Purpose:** Show the user their own progress across assessments over time.
+
+**Outputs:** Section/overall deltas, trend direction, encouraging framing.
+
+**Must not:** Compare users against each other; shame regression; hide methodological version changes.
+
+---
+
+### History Engine
+
+**Purpose:** Persist and retrieve past assessment snapshots.
+
+**Stores:** Timestamp, answers, report snapshot, content version, scoring version.
+
+**Must not:** Mutate historical snapshots when rules change; must version and disclose.
+
+---
+
+### Action Engine
+
+**Purpose:** Transform weak areas into structured, trackable action plans.
+
+**Outputs:** Prioritized actions from low-scoring questions/sections; future: check-ins and completion tracking.
+
+**Must not:** Replace Islamic tarbiyah with generic self-help; actions must trace to approved improvement content.
+
+---
+
+## 14. Data Architecture Principles
+
+1. **Single canonical identifier per question** — `id` and `standardId` are stable foreign keys forever.
+2. **Section ID normalization** — Internal section keys are distinct from display labels; aliases map legacy names.
+3. **Content versioning** — Every content file carries semver or structured version; snapshots record which version was used.
+4. **Scoring versioning** — Threshold and methodology changes bump scoring version; never silently retroactive.
+5. **Separation of content and rules** — Questions/explanations/improvements are content; thresholds/weights are configuration.
+6. **Snapshot immutability** — Completed assessments stored as point-in-time records.
+7. **Minimal persistence** — Store only what serves the user; default local-only.
+8. **Schema evolution** — Migrations must handle old `localStorage` keys gracefully.
+9. **Authoring pipeline** — One authoritative content path; draft files (e.g., `[final_questions.txt`) are not runtime sources.
+10. **RTL-safe storage** — JSON UTF-8; no encoding assumptions that corrupt Urdu/Arabic text.
+
+### Conceptual Data Relationships
+
+```
+questionnaire (master)
+  ├── responseScale
+  └── questions[]
+        ├── id, standardId  (immutable keys)
+        ├── sectionId       (registry reference)
+        ├── question, explanation, improvement
+        └── options[]
+
+sections registry
+  └── sectionId, displayName, sortOrder, aliases[]
+
+scoring config
+  └── thresholds, reverseScoringRules, performanceLevels
+
+assessment snapshot
+  └── answers, report, contentVersion, scoringVersion, completedAt
+```
+
+---
+
+## 15. Privacy Principles
+
+1. **Local-first** — Assessment answers and reports belong on the user's device by default.
+2. **Explicit consent for cloud** — Any sync, backup, or analytics transmitting personal data requires clear opt-in.
+3. **Data minimization** — Collect the least data necessary for the requested feature.
+4. **No surprise sharing** — Never expose scores to third parties, organizations, or other users without explicit, informed consent.
+5. **User deletion** — Users can delete local history; cloud deletion must be complete and verifiable when cloud exists.
+6. **Anonymization before aggregation** — Aggregate analytics must not re-identify individuals.
+7. **Sensitive spiritual data** — Treat answers as highly sensitive; engineering decisions reflect this classification.
+8. **Transparency** — Privacy behavior must be explainable in plain Urdu (user-facing policy separate from this constitution).
+9. **Children and vulnerability** — Design avoids coercive use by authority figures without consent frameworks (organizational mode requires future governance).
+
+---
+
+## 16. Security Principles
+
+1. **Static site hygiene** — Subresource integrity for CDN assets where applicable; prefer self-hosted fonts when feasible.
+2. **No secrets in client** — API keys, Firebase config for production, and credentials never committed to repository.
+3. **HTTPS only** — Production hosting must enforce TLS.
+4. **Supply chain awareness** — Dependencies (when introduced) pinned, audited, and minimized.
+5. **XSS prevention** — User-facing dynamic content must be escaped/sanitized; JSON content rendered safely.
+6. **Content Security Policy** — Deploy CSP headers compatible with app needs as hosting matures.
+7. **Auth hardening (future)** — If Firebase Auth added: secure session handling, email verification policy, least-privilege Firestore rules.
+8. **Firestore rules (future)** — Users read/write only their own documents; no open collections.
+9. **Integrity of protected assets** — Content and scoring files treated as signed-off artifacts; changes auditable via git and review.
+10. **Print and export** — Exported data flows are user-initiated; no background exfiltration.
+
+---
+
+## 17. Coding Standards
+
+1. **Language** — JavaScript (ES6+) for application logic unless constitutionally approved migration occurs.
+2. **Naming** — Descriptive English for code identifiers; Urdu for user-facing strings in content files.
+3. **Formatting** — Match existing file conventions; consistent indentation within each file.
+4. **Functions** — Small, single-purpose; extract when logic exceeds readable comprehension (~40 lines heuristic).
+5. **No magic strings** — Section IDs, storage keys, and thresholds centralized.
+6. **Comments** — Explain non-obvious business rules and Islamic/domain constraints; avoid narrating obvious code.
+7. **DOM access** — Prefer event delegation for dynamic content; null-safe optional chaining on DOM queries.
+8. **Error handling** — Never swallow errors silently; user-visible fallback where appropriate.
+9. **Accessibility** — Maintain `aria-live`, focus management, and semantic structure on UI changes.
+10. **Dependencies** — Require justification document in PR description before adding any npm/CDN library.
+
+---
+
+## 18. Git Workflow
+
+1. **Main branch** — `main` is always deployable; protected.
+2. **Feature branches** — `feature/<short-description>` from latest `main`.
+3. **Fix branches** — `fix/<short-description>` for bugs and integrity patches.
+4. **Governance branches** — `content/<topic>` or `assessment/<topic>` for protected asset changes — require explicit approval label.
+5. **Commits** — Atomic, descriptive messages focused on *why*; complete sentences; English or bilingual as team prefers.
+6. **No force push to main** — Ever.
+7. **Pull requests** — Required for all merges; include test plan and constitutional impact note if applicable.
+8. **Protected paths** — PRs touching `questionnaire.json`, scoring logic, or section registry require designated reviewer approval (see Assessment Protection Rules).
+9. **No secrets in git** — `.env`, credentials, and service account files gitignored.
+10. **Hooks** — Pre-commit hooks honored; never bypass unless explicitly authorized.
+
+---
+
+## 19. Release Workflow
+
+1. **Semantic versioning** — `MAJOR.MINOR.PATCH` aligned to roadmap themes.
+   - **PATCH** — Bug fixes, copy fixes, non-methodology corrections (v1.0.1).
+   - **MINOR** — New features, engines, modularization (v2.x).
+   - **MAJOR** — Breaking assessment, scoring, or snapshot schema changes (require migration plan and announcement).
+
+2. **Release checklist**
+   - Scoring baseline tests pass against frozen fixtures.
+   - Section registry consistent across content and report.
+   - Manual smoke test: welcome → 50 questions → report → print → restart.
+   - Mobile and RTL visual check.
+   - Version number updated in app and content metadata.
+   - Git tag created: `vX.Y.Z`.
+   - Release notes document user-visible changes and any methodology disclosures.
+
+3. **Deployment** — Static assets published to approved hosting (e.g., GitHub Pages); verify HTTPS and cache headers.
+
+4. **Rollback plan** — Previous tag redeployable within one step; snapshot version tags prevent misinterpretation of historical results.
+
+---
+
+## 20. Testing Philosophy
+
+1. **Tests serve trust** — Assessment products require correctness tests beyond manual QA.
+2. **Golden fixtures** — Known answer sets with expected raw scores, section percentages, and performance levels.
+3. **Domain tests first** — Scoring, section aggregation, reverse scoring, and report data composition tested without browser DOM.
+4. **Regression on protected logic** — Any change to scoring or section mapping must update or justify fixture changes explicitly.
+5. **UI smoke tests** — Lightweight end-to-end path optional as tooling matures; not a substitute for domain tests.
+6. **Content validation** — Schema checks: 50 questions, unique IDs, valid section references, required fields present.
+7. **Manual Islamic review** — Automated tests do not replace domain expert review of content changes.
+8. **Test before release** — No release with failing scoring fixtures.
+
+---
+
+## 21. Documentation Standards
+
+| Document Type | Purpose | Location (convention) |
+|---------------|---------|------------------------|
+| **Constitution** | Principles, governance, architecture | `.cursor/rules/maiyaar-project-constitution.mdc` |
+| **README** | Setup, run, deploy for contributors | Repository root (when maintained) |
+| **CHANGELOG** | Version history and user-visible changes | Repository root (recommended) |
+| **Content guide** | Authoring rules for questions/sections | TBD — requires approval to create |
+| **ADR (Architecture Decision Record)** | Significant technical decisions | `docs/adr/` (when introduced) |
+
+Rules:
+
+- Constitution changes require explicit maintainer approval and version note at document footer.
+- Code comments do not duplicate constitution; they reference business rules briefly.
+- User-facing Urdu help is separate from engineering documentation.
+- AI assistants must treat this constitution as superseding informal assumptions.
+
+---
+
+## 22. Assessment Protection Rules
+
+The assessment is a **governed asset**. Casual modification is prohibited.
+
+### Strict Rules — Require Explicit Approval
+
+| Rule | Rationale |
+|------|-----------|
+| **Never modify `questionnaire.json` without explicit approval** | Single source of truth for 50 questions and spiritual content |
+| **Never modify assessment methodology without explicit approval** | Methodology defines what is being measured |
+| **Never modify scoring logic without explicit approval** | Scores affect user trust and historical comparability |
+| **Never rename question identifiers (`id`, `standardId`)** | Breaks history, trends, analytics, and feedback correlation |
+| **Never delete assessment questions** | Destroys longitudinal compatibility; deprecate with governance instead |
+| **Never reorder questions without approval** | Affects UX research baselines and progressive context |
+| **Never change the four-point response scale without approval** | Invalidates historical comparison |
+| **Never alter section definitions without registry update and approval** | Prevents scoring/report drift |
+| **Never apply retroactive scoring rule changes to stored snapshots** | Historical integrity |
+| **Never import content from draft files into runtime without review** | Prevents unvetted content entering production |
+
+### Default Posture
+
+- **Prefer extending functionality** over redesigning the assessment.
+- **Prefer additive schema fields** over breaking changes.
+- **Prefer aliases and mappings** over renaming canonical identifiers.
+- **Deprecate, don't delete** — Mark content inactive; retain IDs.
+
+### Approval Authority
+
+Changes to protected assets require:
+
+1. Explicit user/maintainer approval in writing (issue, PR description, or signed-off request).
+2. Domain review for content/theological changes.
+3. Architecture review for scoring/section changes.
+4. Updated golden test fixtures where applicable.
+
+---
+
+## 23. AI Collaboration Rules
+
+AI assistants (Cursor agents, copilots, automated reviewers) **must** adhere to this constitution.
+
+### Before Any Change
+
+1. **Understand the complete codebase** — Read relevant files; do not propose changes from assumption.
+2. **Read this constitution** — Resolve conflicts in favor of the constitution unless user explicitly overrides for a specific task.
+3. **Identify protected assets** — Flag touches to `questionnaire.json`, scoring, sections, and identifiers before editing.
+
+### During Implementation
+
+4. **Preserve backward compatibility** — Especially storage keys, question IDs, and snapshot schemas.
+5. **Prefer modular architecture** — Extract domain logic; do not enlarge monoliths without justification.
+6. **Avoid unnecessary dependencies** — Propose vanilla solutions first.
+7. **Avoid overengineering** — No speculative frameworks for 50-question static app unless roadmap-aligned.
+8. **Minimal diff scope** — Change only what the task requires; no drive-by refactors.
+9. **Match existing conventions** — Naming, formatting, RTL patterns, Urdu content handling.
+10. **Explain architectural reasoning** — State trade-offs when proposing non-trivial changes.
+
+### Protected Asset Protocol
+
+11. **Ask before changing protected assets** — If task implies questionnaire/scoring/methodology change, stop and confirm.
+12. **Never silently fix content** — Content corrections are governance events, not drive-by edits.
+13. **Report integrity risks** — Section name drift, dead code affecting scores, missing persistence — surface proactively.
+14. **Do not commit unless asked** — Follow user git preferences.
+15. **Do not create documentation files unless asked** — Except when explicitly tasked (like this constitution).
+
+### Output Quality
+
+16. **Complete sentences** — Professional technical prose in communications.
+17. **Implementation independence in design docs** — Principles before code in architectural responses.
+18. **Cite codebase accurately** — Reference files and line ranges when discussing existing behavior.
+
+---
+
+## 24. Decision Framework
+
+Before proposing or implementing any change, evaluate against these dimensions **in order of veto power**:
+
+| Dimension | Key Question |
+|-----------|--------------|
+| **Assessment integrity** | Does this preserve or threaten governed assessment assets? |
+| **Product philosophy** | Does this support sincere muhāsaba, not gamification or surveillance? |
+| **Privacy** | Is local-first maintained? Is consent required and planned? |
+| **Simplicity** | Is this the smallest adequate solution? |
+| **Maintainability** | Does this reduce or increase long-term complexity? |
+| **User experience** | Does this respect RTL, Urdu, reflection-first flow, and dignity? |
+| **Scalability** | Does this enable roadmap engines without premature optimization? |
+| **Long-term compatibility** | Are IDs, snapshots, and versions protected? |
+
+### Decision Outcomes
+
+- **Proceed** — All dimensions satisfied or acceptable trade-offs documented.
+- **Proceed with ADR** — Significant trade-offs; record decision for future maintainers.
+- **Defer** — Violates principles; propose alternative aligned with constitution.
+- **Escalate** — Protected asset involved; require explicit human approval.
+
+---
+
+## 25. Long-Term Vision
+
+Maiyaar should mature into a **trusted Islamic self-improvement platform** spanning years of a user's spiritual journey — while remaining, at its core, a simple mirror for honest muhāsaba.
+
+### Horizons
+
+**Near term (v1.x)** — Stable, integrity-verified assessment; normalized sections; resume and local report history; polished Urdu UX.
+
+**Medium term (v2.x)** — Modular architecture; local history and trends; action plans with follow-through; optional anonymous feedback; rigorous testing and content versioning.
+
+**Long term (v3+ and beyond)** — Optional authenticated cloud sync for multi-device history; organizational deployment modes with strict consent; richer tarbiyah integrations (curated content, not open social); multilingual expansion only if Islamic content quality is guaranteed per locale.
+
+### Eternal Invariants
+
+Whatever the version:
+
+- The product serves **the user's relationship with Allah**, not extrinsic metrics alone.
+- Assessment content and methodology remain **governed, auditable, and protected**.
+- **Privacy and dignity** are defaults, not premium features.
+- **Reflection precedes action**; action plans serve reflection, not replace it.
+- Technology grows **modularly** around a stable spiritual instrument — the 50 questions of معیارِ مطلوب.
+
+---
+
+## Document Governance
+
+| Field | Value |
+|-------|-------|
+| **Title** | Maiyaar Project Constitution |
+| **Version** | 1.0.0 |
+| **Ratified** | 2026-07-02 |
+| **Authority** | Project maintainers and explicit user approval |
+| **Amendments** | Require documented approval; increment constitution version |
+| **Supersedes** | Informal conventions, ad hoc AI instructions conflicting with this document |
+
+*This constitution is the permanent reference for all Maiyaar engineering, product, and AI collaboration decisions.*

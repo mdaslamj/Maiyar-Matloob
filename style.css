@@ -220,6 +220,59 @@ label:focus-visible {
     font-weight: 600;
 }
 
+.primary-btn:disabled,
+.primary-btn[disabled] {
+    background: #94a3b8;
+    color: #f8fafc;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.primary-btn:disabled:hover,
+.primary-btn[disabled]:hover {
+    transform: none;
+}
+
+.questionnaire-load-status {
+    text-align: center;
+    color: #475569;
+    font-size: 16px;
+    margin-top: 4px;
+}
+
+.questionnaire-load-error {
+    background: #fff7f7;
+    border: 2px solid #fecaca;
+    border-radius: 16px;
+    padding: 14px 16px;
+    color: #991b1b;
+    font-size: 16px;
+    line-height: 1.8;
+    text-align: center;
+}
+
+.session-resume-prompt {
+    background: #f8fbff;
+    border: 2px solid #dbeafe;
+    border-radius: 18px;
+    padding: 16px;
+    display: grid;
+    gap: 12px;
+}
+
+.session-resume-text {
+    text-align: center;
+    color: #334155;
+    font-size: 16px;
+    line-height: 1.8;
+}
+
+.session-resume-actions {
+    display: grid;
+    gap: 10px;
+}
+
 /* ===============================
    Questionnaire Screen
 ================================ */
@@ -236,6 +289,7 @@ label:focus-visible {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    --questionnaire-nav-clearance: 72px;
 }
 
 .progressHeader {
@@ -300,9 +354,10 @@ progress::-webkit-progress-value {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 4px 2px 8px;
+    padding: 4px 2px calc(var(--questionnaire-nav-clearance) + 8px);
     overscroll-behavior: contain;
     scrollbar-gutter: stable both-edges;
+    scroll-padding-bottom: calc(var(--questionnaire-nav-clearance) + 8px);
 }
 
 .question-card {
@@ -367,6 +422,27 @@ progress::-webkit-progress-value {
     display: grid;
     gap: 10px;
     margin-top: 12px;
+}
+
+.question-card--validation {
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+}
+
+.answer-validation {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: #fff7f7;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 16px;
+    line-height: 1.7;
+    text-align: center;
+}
+
+.answer-validation[hidden] {
+    display: none;
 }
 
 .option {
@@ -763,7 +839,15 @@ progress::-webkit-progress-value {
         max-width: none;
     }
 
+    .questionnaire-shell {
+        --questionnaire-nav-clearance: 132px;
+    }
+
     .infoBox {
+        grid-template-columns: 1fr;
+    }
+
+    .session-resume-actions {
         grid-template-columns: 1fr;
     }
 
@@ -833,6 +917,26 @@ progress::-webkit-progress-value {
 
     .report-card {
         box-shadow: none;
+        break-inside: avoid;
+    }
+
+    .growth-group-panel {
+        display: grid !important;
+    }
+
+    .growth-group-toggle {
+        display: block !important;
+        background: transparent;
+        border: none;
+        color: #0f172a;
+        font-weight: 700;
+        padding: 8px 0 4px;
+        min-height: auto;
+        box-shadow: none;
+        transform: none;
+    }
+
+    .question-insight-card {
         break-inside: avoid;
     }
 }

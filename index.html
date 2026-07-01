@@ -115,11 +115,49 @@
 
             </div>
 
-            <button id="startButton" class="primary-btn">
+            <button id="startButton" class="primary-btn" disabled>
 
                 شروع کریں
 
             </button>
+
+            <div id="sessionResumePrompt" class="session-resume-prompt" style="display:none;" aria-live="polite">
+
+                <p class="session-resume-text">
+
+                    آپ کا نامکمل جائزہ محفوظ ہے۔ کیا آپ جاری رکھنا چاہتے ہیں؟
+
+                </p>
+
+                <div class="session-resume-actions">
+
+                    <button id="continueSessionBtn" type="button" class="primary-btn">
+
+                        جاری رکھیں
+
+                    </button>
+
+                    <button id="restartSessionBtn" type="button" class="secondary-btn">
+
+                        دوبارہ شروع کریں
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <p id="questionnaireLoadingMessage" class="questionnaire-load-status" aria-live="polite">
+
+                سوالنامہ لوڈ ہو رہا ہے...
+
+            </p>
+
+            <div id="questionnaireErrorMessage" class="questionnaire-load-error" role="alert" aria-live="assertive" style="display:none;">
+
+                معذرت، محاسبۂ نفس کا سوالنامہ لوڈ نہیں ہو سکا۔ براہِ کرم صفحہ دوبارہ لوڈ کریں یا منتظم سے رابطہ کریں۔
+
+            </div>
 
         </div>
 
@@ -173,13 +211,13 @@
 
             <button id="previousBtn" class="secondary-btn">
 
-                ← Previous
+                ← پچھلا
 
             </button>
 
             <button id="nextBtn" class="primary-btn">
 
-                Next →
+                اگلا →
 
             </button>
 
