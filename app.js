@@ -63,6 +63,7 @@ function showQuestionnaireScreen() {
     document.getElementById("welcomeScreen").style.display = "none";
     document.getElementById("questionnaireScreen").style.display = "block";
     document.getElementById("dashboardScreen").style.display = "none";
+    document.getElementById("questionContainer").innerHTML = "";
     document.body.classList.add("questionnaire-active");
 
 }
@@ -122,9 +123,13 @@ function clearStoredAnswers() {
     currentQuestion = 0;
     isSubmitted = false;
 
+    const storageKeys = [STORAGE_KEY, `${STORAGE_KEY}-report`, "mahasaba-nafs-report", "mahasaba-nafs-dashboard"];
+
     try {
-        localStorage.removeItem(STORAGE_KEY);
-        sessionStorage.removeItem(STORAGE_KEY);
+        storageKeys.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        });
     }
 
     catch (error) {
@@ -138,6 +143,7 @@ function startQuestionnaire() {
     showQuestionnaireScreen();
     clearStoredAnswers();
     renderQuestion();
+    updateProgress();
 
 }
 
@@ -149,8 +155,10 @@ function renderQuestion() {
 
     const question = questionnaire[currentQuestion];
     const markup = createQuestionMarkup(question);
+    const container = document.getElementById("questionContainer");
 
-    document.getElementById("questionContainer").innerHTML = markup;
+    container.innerHTML = markup;
+    container.scrollTop = 0;
 
     restoreAnswer(question);
     updateProgress();
