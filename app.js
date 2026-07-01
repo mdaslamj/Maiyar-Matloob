@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.1.1 — Mobile Responsive Refinement
+// Version 2.1.3 — Dashboard Simplification
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.1.1";
+const APP_VERSION = "2.1.3";
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
 
@@ -195,7 +195,7 @@ function renderUICard(options = {}) {
                     ${kicker ? `<span class="ui-card__kicker">${escapeHtml(kicker)}</span>` : ""}
                     ${title ? `<h3 class="ui-card__title">${escapeHtml(title)}</h3>` : ""}
                 </header>` : ""}
-            <div class="ui-card__body">${bodyHtml}</div>
+            ${bodyHtml ? `<div class="ui-card__body">${bodyHtml}</div>` : ""}
             ${footerHtml ? `<footer class="ui-card__footer">${footerHtml}</footer>` : ""}
         </article>`;
 
@@ -345,18 +345,6 @@ function handleWelcomeDashboardClick(event) {
         case "restart-assessment":
             restartQuestionnaireFromWelcome();
             break;
-        case "open-history":
-            openAssessmentHistory();
-            break;
-        case "open-progress":
-            openProgressJourney();
-            break;
-        case "open-insights":
-            openMaiyaarInsights();
-            break;
-        case "open-home":
-            openPersonalHomeDashboard();
-            break;
         default:
             break;
     }
@@ -386,12 +374,7 @@ function renderWelcomeDashboard() {
     const dashboard = getDomainData(bundle.dashboard);
     const growthDashboard = getDomainData(bundle.growthDashboard);
     const overview = growthDashboard.overview || {};
-    const maiyaarInsights = getDomainData(bundle.maiyaarInsights);
-    const snapshots = bundle.snapshots || [];
     const hasIncompleteSession = application.hasIncompleteSession();
-    const latestSnapshot = snapshots[0];
-    const overallTrend = overview.overallTrend || {};
-    const overallDistribution = computeOverallDistribution(maiyaarInsights.questionInsights || []);
 
     const assessmentActions = hasIncompleteSession
         ? `
@@ -401,79 +384,23 @@ function renderWelcomeDashboard() {
         : renderQuickActionButton("startButton", UI_ICONS.START, UI_LABELS.START_ASSESSMENT, "primary-btn ui-assessment-btn");
 
     container.innerHTML = `
-        <div class="dashboard-grid dashboard-grid--responsive">
+        <div class="dashboard-grid dashboard-grid--launcher">
             ${renderUICard({
                 type: "action",
                 className: "dashboard-card dashboard-card--assessment",
                 title: "Assessment",
-                bodyHtml: `<p class="ui-card__text">Begin or resume your Muhasabah.</p>`,
                 footerHtml: `<div class="ui-action-stack ui-action-stack--assessment">${assessmentActions}</div>`
             })}
 
             ${renderUICard({
                 type: "status",
                 className: "dashboard-card dashboard-card--status",
-                title: "Today's Status",
+                title: "Current Status",
                 bodyHtml: `
                     <div class="ui-metric-grid ui-metric-grid--compact">
                         ${renderMetricRow("Current Level", dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—", dashboard.currentOverallPercentage != null ? `${dashboard.currentOverallPercentage}%` : "")}
                         ${renderMetricRow("Last Assessment", dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—")}
-                        ${renderMetricRow("Progress", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : "—", overview.overallTrend?.deltaPercentage != null ? `${overview.overallTrend.deltaPercentage}% change` : "More assessments needed")}
-                    </div>`
-            })}
-
-            ${renderUICard({
-                type: "insight",
-                className: "dashboard-card dashboard-card--maiyaar",
-                title: UI_LABELS.MAIYAAR_INSIGHTS,
-                bodyHtml: maiyaarInsights.hasSufficientData
-                    ? `
-                        <p class="ui-card__text ui-card__text--compact">Anonymous aggregated implementation patterns.</p>
-                        <div class="ui-metric-grid ui-metric-grid--compact">
-                            ${renderMetricRow("Always", `${overallDistribution.always}%`)}
-                            ${renderMetricRow("Often", `${overallDistribution.often}%`)}
-                            ${renderMetricRow("Sometimes", `${overallDistribution.sometimes}%`)}
-                            ${renderMetricRow("Never", `${overallDistribution.never}%`)}
-                        </div>`
-                    : `<p class="ui-empty">${UI_LABELS.EMPTY_INSIGHTS}</p>`,
-                footerHtml: renderQuickActionButton("openInsightsBtn", UI_ICONS.INSIGHTS, UI_LABELS.OPEN_MAIYAAR_INSIGHTS, "ui-card-link-btn")
-            })}
-
-            ${renderUICard({
-                type: "trend",
-                className: "dashboard-card dashboard-card--trends",
-                title: "Insights & Trends",
-                bodyHtml: `
-                    <div class="ui-metric-grid ui-metric-grid--compact">
-                        ${renderMetricRow("Overall Trend", getTrendClassificationLabel(overallTrend.classification || "Insufficient Data"))}
-                        ${renderMetricRow("Consistency", overview.consistencyScore != null ? `${overview.consistencyScore}%` : "—")}
-                        ${renderMetricRow("Recommendations", growthDashboard.recommendedFocus?.length ? `${growthDashboard.recommendedFocus.length} focus areas` : "—")}
-                    </div>`,
-                footerHtml: renderQuickActionButton("openProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.OPEN_PROGRESS_REVIEW, "ui-card-link-btn")
-            })}
-
-            ${renderUICard({
-                type: "history",
-                className: "dashboard-card dashboard-card--history",
-                title: "Assessment History",
-                bodyHtml: `
-                    <div class="ui-metric-grid ui-metric-grid--compact">
-                        ${renderMetricRow("Total Assessments", String(snapshots.length))}
-                        ${renderMetricRow("Latest Assessment", latestSnapshot ? formatAssessmentDate(latestSnapshot.createdAt) : "—", latestSnapshot ? `${latestSnapshot.overallPercentage}%` : "")}
-                    </div>`,
-                footerHtml: renderQuickActionButton("openHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.OPEN_ASSESSMENT_HISTORY, "ui-card-link-btn")
-            })}
-
-            ${renderUICard({
-                type: "quick",
-                className: "dashboard-card dashboard-card--quick",
-                title: "Quick Actions",
-                bodyHtml: `
-                    <div class="ui-quick-actions ui-quick-actions--stack">
-                        ${renderQuickActionButton("quickHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)}
-                        ${renderQuickActionButton("quickProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW)}
-                        ${renderQuickActionButton("quickInsightsBtn", UI_ICONS.INSIGHTS, UI_LABELS.MAIYAAR_INSIGHTS)}
-                        ${renderQuickActionButton("quickHomeBtn", UI_ICONS.HOME, UI_LABELS.OPEN_PERSONAL_HOME)}
+                        ${renderMetricRow("Overall Progress", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : "—", overview.overallTrend?.deltaPercentage != null ? `${overview.overallTrend.deltaPercentage}% change` : "More assessments needed")}
                     </div>`
             })}
         </div>`;
@@ -481,14 +408,7 @@ function renderWelcomeDashboard() {
     const actionMap = {
         startButton: "start-assessment",
         continueSessionBtn: "continue-assessment",
-        restartSessionBtn: "restart-assessment",
-        openHistoryBtn: "open-history",
-        openProgressBtn: "open-progress",
-        openInsightsBtn: "open-insights",
-        quickHomeBtn: "open-home",
-        quickHistoryBtn: "open-history",
-        quickProgressBtn: "open-progress",
-        quickInsightsBtn: "open-insights"
+        restartSessionBtn: "restart-assessment"
     };
 
     Object.entries(actionMap).forEach(([elementId, action]) => {
@@ -1901,14 +1821,13 @@ function renderDashboard(report, options = {}) {
                 <p class="report-summary-text">معیار<br>اسلامی محاسبۂ نفس<br>ورژن ${APP_VERSION}</p>
             </section>
 
-            <div class="navigation report-navigation no-print">
-                ${isHistorical
-                    ? `<button id="historyReportBackBtn" class="secondary-btn">${UI_LABELS.ASSESSMENT_HISTORY}</button>`
-                    : `<button id="restartBtn" class="secondary-btn">${UI_ICONS.RESTART} ${UI_LABELS.START_NEW_ASSESSMENT}</button>`}
-                <button id="openHistoryFromReportBtn" class="nav-btn btn-with-icon">${UI_ICONS.HISTORY} ${UI_LABELS.ASSESSMENT_HISTORY}</button>
-                <button id="openHomeFromReportBtn" class="nav-btn">${UI_LABELS.OPEN_PERSONAL_HOME}</button>
-                <button id="openProgressFromReportBtn" class="nav-btn btn-with-icon">${UI_ICONS.PROGRESS} ${UI_LABELS.PROGRESS_REVIEW}</button>
-            </div>
+            <nav class="report-hub-nav no-print" aria-label="Report navigation">
+                ${renderQuickActionButton("openProgressFromReportBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW, "ui-quick-action-btn")}
+                ${renderQuickActionButton("openHistoryFromReportBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY, "ui-quick-action-btn")}
+                ${renderQuickActionButton("openMaiyaarFromReportBtn", UI_ICONS.INSIGHTS, UI_LABELS.MAIYAAR_INSIGHTS, "ui-quick-action-btn")}
+                ${renderQuickActionButton("printFromReportBtn", UI_ICONS.PRINT, UI_LABELS.PRINT_REPORT, "ui-quick-action-btn")}
+                ${renderQuickActionButton("restartFromReportBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "primary-btn ui-assessment-btn")}
+            </nav>
         </div>`;
 
     dashboard.removeEventListener("click", handleGrowthGroupToggle);
@@ -1916,17 +1835,17 @@ function renderDashboard(report, options = {}) {
 
     if (isHistorical) {
         document.getElementById("historyReportToolbarBackBtn")?.addEventListener("click", openAssessmentHistory);
-        document.getElementById("historyReportBackBtn")?.addEventListener("click", openAssessmentHistory);
     }
     else {
         document.getElementById("reportBackBtn")?.addEventListener("click", showWelcomeScreen);
-        document.getElementById("restartBtn")?.addEventListener("click", startQuestionnaire);
     }
 
     document.getElementById("openHistoryFromReportBtn")?.addEventListener("click", openAssessmentHistory);
-    document.getElementById("openHomeFromReportBtn")?.addEventListener("click", openPersonalHomeDashboard);
     document.getElementById("openProgressFromReportBtn")?.addEventListener("click", openProgressJourney);
+    document.getElementById("openMaiyaarFromReportBtn")?.addEventListener("click", openMaiyaarInsights);
+    document.getElementById("printFromReportBtn")?.addEventListener("click", printReport);
     document.getElementById("printBtn")?.addEventListener("click", printReport);
+    document.getElementById("restartFromReportBtn")?.addEventListener("click", startQuestionnaire);
 
 }
 

@@ -1199,7 +1199,8 @@ progress::-webkit-progress-value {
     .navigation,
     .no-print,
     .screen-toolbar,
-    .report-navigation {
+    .report-navigation,
+    .report-hub-nav {
         display: none !important;
     }
 
@@ -1711,7 +1712,8 @@ progress::-webkit-progress-value {
 
     .dashboard-grid--primary,
     .dashboard-grid--secondary,
-    .dashboard-grid--split {
+    .dashboard-grid--split,
+    .dashboard-grid--launcher {
         grid-template-columns: 1fr;
     }
 
@@ -1839,8 +1841,25 @@ progress::-webkit-progress-value {
     gap: var(--space-md);
 }
 
-.dashboard-grid--responsive {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+.dashboard-grid--launcher {
+    max-width: 760px;
+    margin-inline: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-md);
+}
+
+.report-hub-nav {
+    display: grid;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+}
+
+.report-hub-nav .ui-assessment-btn {
+    margin-top: var(--space-xs);
 }
 
 .dashboard-grid--primary,
@@ -2086,12 +2105,12 @@ progress::-webkit-progress-value {
         grid-template-columns: 1fr;
     }
 
+    .dashboard-grid--launcher {
+        grid-template-columns: 1fr;
+    }
+
     .dashboard-card--assessment { order: 1; }
     .dashboard-card--status { order: 2; }
-    .dashboard-card--maiyaar { order: 3; }
-    .dashboard-card--trends { order: 4; }
-    .dashboard-card--history { order: 5; }
-    .dashboard-card--quick { order: 6; }
 
     .ui-card {
         padding: var(--space-sm) var(--space-md);
