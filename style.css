@@ -279,7 +279,7 @@ progress::-webkit-progress-value {
     justify-content: center;
     min-height: 0;
     overflow-y: auto;
-    padding-bottom: 6px;
+    padding: 4px 0 8px;
 }
 
 .question-card {
@@ -410,6 +410,8 @@ progress::-webkit-progress-value {
     border-top: 1px solid #e5e7eb;
     background: #f8fbff;
     border-radius: 16px;
+    margin-top: auto;
+    flex-shrink: 0;
 }
 
 .navigation button {

@@ -116,14 +116,27 @@ function showDashboardScreen() {
 
 }
 
+function clearStoredAnswers() {
+
+    answers = {};
+    currentQuestion = 0;
+    isSubmitted = false;
+
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+
+    catch (error) {
+        console.error(error);
+    }
+
+}
+
 function startQuestionnaire() {
 
     showQuestionnaireScreen();
-
-    currentQuestion = 0;
-    answers = loadAnswers();
-    isSubmitted = false;
-
+    clearStoredAnswers();
     renderQuestion();
 
 }
@@ -301,10 +314,6 @@ function previousQuestion() {
 function updateProgress() {
 
     const totalQuestions = questionnaire.length || 0;
-    const answeredCount = questionnaire.reduce((count, question, index) => {
-        const questionKey = getQuestionKey(question, index);
-        return count + (Object.prototype.hasOwnProperty.call(answers, questionKey) ? 1 : 0);
-    }, 0);
     const currentNumber = totalQuestions ? currentQuestion + 1 : 0;
 
     document.getElementById("currentQuestion").textContent = currentNumber;
@@ -312,9 +321,9 @@ function updateProgress() {
 
     const progressBar = document.getElementById("progressBar");
     progressBar.max = totalQuestions;
-    progressBar.value = answeredCount;
+    progressBar.value = currentNumber;
 
-    const percentage = totalQuestions ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+    const percentage = totalQuestions ? Math.round((currentNumber / totalQuestions) * 100) : 0;
     document.getElementById("percentage").textContent = percentage + "%";
 
     const nextButton = document.getElementById("nextBtn");
@@ -641,6 +650,18 @@ function getDisplaySectionName(sectionName) {
         return "اسلامی فکر و طرزِ زندگی";
     }
 
+    if (sectionName === "تزکیۂ نفس") {
+        return "تزکیۂ نفس";
+    }
+
+    if (sectionName === "معاملات و اخلاق") {
+        return "اخلاق و معاشرت";
+    }
+
+    if (sectionName === "تنظیمی زندگی") {
+        return "تنظیمی زندگی و استقامت";
+    }
+
     return sectionName;
 
 }
@@ -838,10 +859,10 @@ function buildReportSections(categories) {
         "عقیدہ و فکر",
         "تعلق باللہ و عبادات",
         "اسلامی فکر و طرزِ زندگی",
-        "تزکیۂ نفس",
-        "معاملات و اخلاق",
+        "تزکیۂ نفس",
+        "اخلاق و معاشرت",
         "دعوت و اقامتِ دین",
-        "تنظیمی زندگی"
+        "تنظیمی زندگی و استقامت"
     ];
 
     return sectionOrder.map(sectionName => getReportSectionData(sectionName, categories));
@@ -951,11 +972,11 @@ function renderDashboard(report) {
 
             <section class="report-card report-card-green">
                 <div class="report-card-head"><span class="report-card-icon">🎯</span><h3>معیارِ مطلوب</h3></div>
-                <p class="report-summary-text benchmark-intro">یہ جائزہ دستورِ جماعت اسلامی ہند میں بیان کردہ معیارِ مطلوب کی روشنی میں ترتیب دیا گیا ہے۔ اس میں آپ کے جوابات کا تجزیہ مختلف شعبوں کے حوالے سے کیا گیا ہے۔</p>
+                <p class="report-summary-text benchmark-intro">یہ جائزہ معیارِ مطلوب کی روشنی میں ترتیب دیا گیا ہے۔ اس میں آپ کے جوابات کا تجزیہ مختلف شعبوں کے حوالے سے کیا گیا ہے۔</p>
             </section>
 
             <section class="report-card report-card-blue">
-                <div class="report-card-head"><span class="report-card-icon">📈</span><h3>سہ شعبوں کا تجزیہ</h3></div>
+                <div class="report-card-head"><span class="report-card-icon">📈</span><h3>تفصیلی جائزہ</h3></div>
                 <div class="report-section-list">
                     ${sectionMarkup}
                 </div>
@@ -1026,12 +1047,18 @@ function renderDashboard(report) {
 
             <section class="report-card report-card-blue">
                 <div class="report-card-head"><span class="report-card-icon">🙏</span><h3>دعا</h3></div>
-                <p class="report-summary-text">اللہ سے دعا ہے کہ آپ کو سچائی، استقامت اور روحانی ترقی عطا فرمائے۔</p>
+                <p class="report-summary-text" style="font-size:17px; line-height:1.9;">
+                    رَبَّنَا لَا تُزِغْ قُلُوبَنَا بَعْدَ إِذْ هَدَيْتَنَا وَهَبْ لَنَا مِن لَّدُنكَ رَحْمَةً ۚ إِنَّكَ أَنتَ الْوَهَّابُ
+                </p>
+                <p class="report-summary-text">
+                    اے ہمارے رب! ہمیں ہدایت دینے کے بعد ہمارے دلوں کو ٹیڑھا نہ ہونے دے، اور ہمیں اپنی خاص رحمت عطا فرما، بے شک تو ہی سب سے زیادہ عطا فرمانے والا ہے۔
+                </p>
+                <p class="report-summary-text">(سورۃ آل عمران: 8)</p>
             </section>
 
             <section class="report-card report-footer">
                 <div class="report-card-head"><span class="report-card-icon">✦</span><h3>معیار</h3></div>
-                <p class="report-summary-text">محاسبۂ نفس<br>بر اساس معیارِ مطلوب<br>دستور جماعت اسلامی ہند<br>Version 1.0</p>
+                <p class="report-summary-text">معیار<br>اسلامی محاسبۂ نفس<br>Version 1.0</p>
             </section>
 
             <div class="navigation">
