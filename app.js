@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.3.0 — Participant Identity Foundation
+// Version 2.3.1 — Home Page Background Enhancement
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.3.1";
 
 /** Reserved for future admin authentication; community analytics stay hidden until enabled. */
 const IS_ADMIN_MODE = false;
@@ -163,6 +163,7 @@ function activateScreen(screenId, options = {}) {
     });
 
     document.body.classList.toggle("questionnaire-active", screenId === "questionnaireScreen");
+    document.body.classList.toggle("welcome-active", screenId === "welcomeScreen");
 
     if (options.announce) {
         announceToScreenReader(options.announce);
@@ -284,6 +285,8 @@ function initializeScreenAccessibility() {
 
         element.setAttribute("aria-hidden", id === "welcomeScreen" ? "false" : "true");
     });
+
+    document.body.classList.toggle("welcome-active", true);
 
 }
 

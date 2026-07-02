@@ -241,11 +241,36 @@ label:focus-visible {
 ================================ */
 
 .welcome-screen {
-    min-height: calc(100dvh - 36px);
+    position: relative;
+    isolation: isolate;
+    min-height: 100dvh;
     padding: var(--space-xs) 0 var(--space-lg);
 }
 
+.welcome-screen::before,
+.welcome-screen::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+}
+
+.welcome-screen::before {
+    z-index: 0;
+    background-image: url("assets/images/maiyaar-home-background.jpg");
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+.welcome-screen::after {
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.8);
+}
+
 .welcome-shell {
+    position: relative;
+    z-index: 2;
     width: 100%;
     display: grid;
     gap: var(--space-md);
@@ -1342,6 +1367,11 @@ progress::-webkit-progress-value {
     body {
         background: #ffffff;
         color: #111827;
+    }
+
+    .welcome-screen::before,
+    .welcome-screen::after {
+        display: none;
     }
 
     .container {
