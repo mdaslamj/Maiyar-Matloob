@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.1.5 — Zero-Scrolling Questionnaire
+// Version 2.1.6 — Product Refinement & UX Polish
 // Production Architecture
 // =======================================
 
@@ -12,30 +12,33 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.1.5";
+const APP_VERSION = "2.1.6";
+
+/** Reserved for future admin authentication; community analytics stay hidden until enabled. */
+const IS_ADMIN_MODE = false;
 
 const ANSWER_VALIDATION_MESSAGE = "براہِ کرم آگے بڑھنے سے پہلے ایک جواب منتخب کریں۔";
 
 const UI_LABELS = {
-    NAV_PREVIOUS: "← Previous",
-    NAV_NEXT: "Next →",
-    NAV_FINISH: "Finish →",
-    DASHBOARD_TITLE: "Maiyar-e-Matloob",
-    PROGRESS_REVIEW: "Insights & Trends",
-    MAIYAAR_INSIGHTS: "Maiyaar-e-Matloob Insights",
-    ASSESSMENT_HISTORY: "Assessment History",
-    CONTINUE_ASSESSMENT: "Continue Assessment",
-    START_NEW_ASSESSMENT: "Start New Assessment",
-    START_ASSESSMENT: "Start Assessment",
-    OPEN_PROGRESS_REVIEW: "Open Insights & Trends",
-    OPEN_MAIYAAR_INSIGHTS: "Open Maiyaar-e-Matloob Insights",
-    OPEN_ASSESSMENT_HISTORY: "Open Assessment History",
-    OPEN_PERSONAL_HOME: "Personal Dashboard",
-    BACK: "← Back",
-    PRINT_REPORT: "Print Report",
-    EMPTY_PROGRESS: "No completed assessments yet.",
-    EMPTY_HISTORY: "No assessment history available.",
-    EMPTY_INSIGHTS: "Complete a new assessment to populate anonymous implementation insights."
+    NAV_PREVIOUS: "← پچھلا",
+    NAV_NEXT: "اگلا →",
+    NAV_FINISH: "مکمل کریں →",
+    DASHBOARD_TITLE: "معیار",
+    PROGRESS_REVIEW: "آپ کی پیش رفت",
+    MAIYAAR_INSIGHTS: "معیارِ مطلوب بصیرت",
+    ASSESSMENT_HISTORY: "جائزوں کی تاریخ",
+    CONTINUE_ASSESSMENT: "جائزہ جاری رکھیں",
+    START_NEW_ASSESSMENT: "نیا جائزہ شروع کریں",
+    START_ASSESSMENT: "جائزہ شروع کریں",
+    OPEN_PROGRESS_REVIEW: "اپنی پیش رفت دیکھیں",
+    OPEN_MAIYAAR_INSIGHTS: "معیارِ مطلوب بصیرت",
+    OPEN_ASSESSMENT_HISTORY: "جائزوں کی تاریخ",
+    OPEN_PERSONAL_HOME: "ذاتی صفحہ",
+    BACK: "← واپس",
+    PRINT_REPORT: "رپورٹ پرنٹ کریں",
+    EMPTY_PROGRESS: "ابھی کوئی مکمل جائزہ محفوظ نہیں ہے۔",
+    EMPTY_HISTORY: "ابھی کوئی جائزہ محفوظ نہیں ہے۔",
+    EMPTY_INSIGHTS: "بصیرت کے لیے مزید مکمل جائزے درکار ہیں۔"
 };
 
 const UI_ICONS = {
@@ -68,6 +71,32 @@ function escapeHtml(value) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
+
+}
+
+function formatUrduPercent(value, options = {}) {
+
+    if (value == null || value === "" || Number.isNaN(Number(value))) {
+        return "—";
+    }
+
+    const numeric = Number(value);
+    const formatted = Number.isInteger(numeric)
+        ? String(numeric)
+        : numeric.toFixed(1).replace(/\.0$/, "");
+    const sign = options.showSign && numeric > 0 ? "+" : "";
+
+    return `${sign}${formatted}٪`;
+
+}
+
+function formatAssessmentComparison(firstValue, latestValue) {
+
+    if (firstValue == null || latestValue == null) {
+        return "—";
+    }
+
+    return `${formatUrduPercent(firstValue)} ← ${formatUrduPercent(latestValue)}`;
 
 }
 
@@ -359,6 +388,12 @@ function handleWelcomeDashboardClick(event) {
         case "restart-assessment":
             restartQuestionnaireFromWelcome();
             break;
+        case "open-history":
+            openAssessmentHistory();
+            break;
+        case "open-progress":
+            openProgressJourney();
+            break;
         default:
             break;
     }
@@ -378,7 +413,7 @@ function renderWelcomeDashboard() {
         container.innerHTML = `
             <div class="ui-card ui-card--status">
                 <div class="ui-card__body">
-                    <p class="ui-empty">Dashboard will appear once the questionnaire is ready.</p>
+                    <p class="ui-empty">سوالنامہ تیار ہونے کے بعد یہاں آپ کا ذاتی صفحہ ظاہر ہوگا۔</p>
                 </div>
             </div>`;
         return;
@@ -398,31 +433,49 @@ function renderWelcomeDashboard() {
         : renderQuickActionButton("startButton", UI_ICONS.START, UI_LABELS.START_ASSESSMENT, "primary-btn ui-assessment-btn");
 
     container.innerHTML = `
-        <div class="dashboard-grid dashboard-grid--launcher">
+        <div class="dashboard-grid dashboard-grid--launcher dashboard-grid--responsive">
             ${renderUICard({
                 type: "action",
                 className: "dashboard-card dashboard-card--assessment",
-                title: "Assessment",
+                title: "جائزہ",
                 footerHtml: `<div class="ui-action-stack ui-action-stack--assessment">${assessmentActions}</div>`
             })}
 
             ${renderUICard({
                 type: "status",
                 className: "dashboard-card dashboard-card--status",
-                title: "Current Status",
+                title: "آج کی کیفیت",
                 bodyHtml: `
                     <div class="ui-metric-grid ui-metric-grid--compact">
-                        ${renderMetricRow("Current Level", dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—", dashboard.currentOverallPercentage != null ? `${dashboard.currentOverallPercentage}%` : "")}
-                        ${renderMetricRow("Last Assessment", dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—")}
-                        ${renderMetricRow("Overall Progress", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : "—", overview.overallTrend?.deltaPercentage != null ? `${overview.overallTrend.deltaPercentage}% change` : "More assessments needed")}
+                        ${renderMetricRow("موجودہ سطح", dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—", dashboard.currentOverallPercentage != null ? formatUrduPercent(dashboard.currentOverallPercentage) : "")}
+                        ${renderMetricRow("آخری جائزہ", dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—")}
+                        ${renderMetricRow("مجموعی پیش رفت", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : "—", overview.overallTrend?.deltaPercentage != null ? `${formatUrduPercent(overview.overallTrend.deltaPercentage, { showSign: true })} تبدیلی` : "مزید جائزوں کی ضرورت")}
                     </div>`
+            })}
+
+            ${renderUICard({
+                type: "summary",
+                className: "dashboard-card dashboard-card--history",
+                title: UI_LABELS.ASSESSMENT_HISTORY,
+                bodyHtml: `<p class="ui-card__text">اپنے پچھلے جائزوں اور غور و فکر کو دیکھیں۔</p>`,
+                footerHtml: renderQuickActionButton("welcomeHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.OPEN_ASSESSMENT_HISTORY, "secondary-btn ui-assessment-btn")
+            })}
+
+            ${renderUICard({
+                type: "summary",
+                className: "dashboard-card dashboard-card--progress",
+                title: UI_LABELS.PROGRESS_REVIEW,
+                bodyHtml: `<p class="ui-card__text">پچھلے اور تازہ جائزے کا موازنہ دیکھیں۔</p>`,
+                footerHtml: renderQuickActionButton("welcomeProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.OPEN_PROGRESS_REVIEW, "secondary-btn ui-assessment-btn")
             })}
         </div>`;
 
     const actionMap = {
         startButton: "start-assessment",
         continueSessionBtn: "continue-assessment",
-        restartSessionBtn: "restart-assessment"
+        restartSessionBtn: "restart-assessment",
+        welcomeHistoryBtn: "open-history",
+        welcomeProgressBtn: "open-progress"
     };
 
     Object.entries(actionMap).forEach(([elementId, action]) => {
@@ -489,7 +542,7 @@ function showDashboardScreen() {
 function showProgressScreen() {
 
     activateScreen("progressScreen", {
-        announce: `${UI_LABELS.PROGRESS_REVIEW} opened`
+        announce: `${UI_LABELS.PROGRESS_REVIEW} کھولی گئی`
     });
 
 }
@@ -523,7 +576,7 @@ function renderPriorityCards(priorities, emptyMessage) {
     return priorities.map(priority => `
         <article class="home-card home-card-compact">
             <strong>${priority.sectionTitle || priority.title}</strong>
-            <span>${priority.latestPercentage != null ? `${priority.latestPercentage}%` : ""}</span>
+            <span>${priority.latestPercentage != null ? formatUrduPercent(priority.latestPercentage) : ""}</span>
         </article>`).join("");
 
 }
@@ -538,8 +591,8 @@ function renderInsightCard(label, insight, emptyMessage) {
         <article class="home-card home-card-compact">
             <strong>${label}</strong>
             <span>${insight.title}</span>
-            ${insight.deltaPercentage != null ? `<small>+${insight.deltaPercentage}%</small>` : ""}
-            ${insight.latestPercentage != null ? `<small>${insight.latestPercentage}%</small>` : ""}
+            ${insight.deltaPercentage != null ? `<small>${formatUrduPercent(insight.deltaPercentage, { showSign: true })}</small>` : ""}
+            ${insight.latestPercentage != null ? `<small>${formatUrduPercent(insight.latestPercentage)}</small>` : ""}
         </article>`;
 
 }
@@ -580,12 +633,12 @@ function renderPersonalHomeDashboard() {
                 <article class="home-card">
                     <strong>موجودہ سطح</strong>
                     <span class="home-card-value">${dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—"}</span>
-                    <span class="home-card-meta">${dashboard.currentOverallPercentage != null ? `${dashboard.currentOverallPercentage}%` : ""}</span>
+                    <span class="home-card-meta">${dashboard.currentOverallPercentage != null ? formatUrduPercent(dashboard.currentOverallPercentage) : ""}</span>
                 </article>
                 <article class="home-card">
                     <strong>پہلے جائزے سے پیش رفت</strong>
-                    <span class="home-card-value">${progress?.deltaPercentage != null ? `${progress.deltaPercentage}%` : "—"}</span>
-                    <span class="home-card-meta">${progress ? `${progress.firstPercentage}% → ${progress.latestPercentage}%` : "مزید جائزوں کی ضرورت"}</span>
+                    <span class="home-card-value">${progress?.deltaPercentage != null ? formatUrduPercent(progress.deltaPercentage, { showSign: true }) : "—"}</span>
+                    <span class="home-card-meta">${progress ? `${formatUrduPercent(progress.firstPercentage)} ← ${formatUrduPercent(progress.latestPercentage)}` : "مزید جائزوں کی ضرورت"}</span>
                 </article>
                 <article class="home-card">
                     <strong>اگلے جائزے کی تجویز</strong>
@@ -595,12 +648,12 @@ function renderPersonalHomeDashboard() {
             </div>
 
             <section class="home-section">
-                <h3>موجودہ اولویتیں</h3>
-                <div class="home-card-list">${renderPriorityCards(dashboard.currentPriorities, "ابھی کوئی اولویت شناخت نہیں ہوئی۔")}</div>
+                <h3>سب سے پہلے اس پر توجہ دیں</h3>
+                <div class="home-card-list">${renderPriorityCards(dashboard.currentPriorities, "ابھی کوئی خاص توجہ تجویز نہیں ہوئی۔")}</div>
             </section>
 
             <section class="home-section">
-                <h3>ذاتی بصیرت</h3>
+                <h3>آپ کے لیے مشورہ</h3>
                 <div class="home-grid home-grid-insights">
                     ${renderInsightCard("سب سے زیادہ بہتری", insights.biggestImprovement, "—")}
                     ${renderInsightCard("سب سے مستحکم شعبہ", insights.mostConsistentArea, "—")}
@@ -614,7 +667,7 @@ function renderPersonalHomeDashboard() {
                 <div class="home-plan-card">
                     <p><strong>تجویز کردہ تاریخ:</strong> ${reassessment.recommendedDate ? formatAssessmentDate(reassessment.recommendedDate) : "—"}</p>
                     <p><strong>وجہ:</strong> ${reassessment.reasonUrdu || "—"}</p>
-                    <p><strong>مستقل مزاجی:</strong> ${reassessment.consistencyScore != null ? `${reassessment.consistencyScore}%` : "—"}</p>
+                    <p><strong>مستقل مزاجی:</strong> ${reassessment.consistencyScore != null ? formatUrduPercent(reassessment.consistencyScore) : "—"}</p>
                     <p><strong>جائزے کا اوسط فاصلہ:</strong> ${reassessment.assessmentFrequency?.averageDaysBetween != null ? `${reassessment.assessmentFrequency.averageDaysBetween} دن` : "—"}</p>
                 </div>
             </section>
@@ -695,12 +748,20 @@ function handleJournalFormSubmit(event) {
 
 function openMaiyaarInsights() {
 
+    if (!IS_ADMIN_MODE) {
+        return;
+    }
+
     progressInsightsTab = "maiyaar";
     openProgressJourney();
 
 }
 
 function openProgressJourney() {
+
+    if (!IS_ADMIN_MODE) {
+        progressInsightsTab = "personal";
+    }
 
     showProgressScreen();
     renderGrowthJourney();
@@ -729,7 +790,7 @@ function renderStructuredList(items, emptyMessage) {
         <article class="progress-section-card">
             <div class="progress-section-title">${item.sectionTitle || item.title || item.message || "—"}</div>
             ${item.latestPercentage != null
-                ? `<div class="progress-section-metrics"><span>تازہ: ${item.latestPercentage}%</span>${item.deltaPercentage != null ? `<strong>${item.deltaPercentage}%</strong>` : ""}</div>`
+                ? `<div class="progress-section-metrics"><span>تازہ: ${formatUrduPercent(item.latestPercentage)}</span>${item.deltaPercentage != null ? `<strong>${formatUrduPercent(item.deltaPercentage, { showSign: true })}</strong>` : ""}</div>`
                 : ""}
             ${item.classification
                 ? `<div class="progress-section-label">${getTrendClassificationLabel(item.classification)}</div>`
@@ -939,97 +1000,98 @@ function renderPersonalProgressPanel(bundle) {
     const latestAssessment = overview.latestAssessment;
     const firstAssessment = overview.firstAssessment;
     const feedback = dashboard.feedbackSummary || {};
-    const nextAssessment = dashboard.nextSuggestedAssessment || {};
     const sectionTrends = dashboard.sectionTrends || [];
-    const improvingSections = sectionTrends.filter(section => section.classification === "Improving");
+    const nextFocus = (dashboard.recommendedFocus || [])[0]
+        || (dashboard.thisWeeksPriority || [])[0]
+        || null;
+    const consistencyScore = dashboard.consistencyScore ?? overview.assessmentFrequency?.consistencyScore;
+    const averageDaysBetween = overview.assessmentFrequency?.averageDaysBetween;
 
-    const sectionMarkup = improvingSections.length
-        ? improvingSections.map(section => `
+    const sectionMarkup = sectionTrends.length
+        ? sectionTrends.map(section => `
             <article class="progress-section-card">
                 <div class="progress-section-title">${section.title}</div>
                 <div class="progress-section-metrics">
-                    <span>${section.firstPercentage}% → ${section.latestPercentage}%</span>
-                    <strong>${section.deltaPercentage != null ? `+${section.deltaPercentage}%` : "—"}</strong>
+                    <span>${formatAssessmentComparison(section.firstPercentage, section.latestPercentage)}</span>
+                    ${section.deltaPercentage != null
+                        ? `<strong>${formatUrduPercent(section.deltaPercentage, { showSign: true })}</strong>`
+                        : ""}
                 </div>
                 <div class="progress-section-label">${getTrendClassificationLabel(section.classification)}</div>
             </article>`).join("")
-        : `<div class="progress-empty">فی الحال کسی شعبے میں واضح بہتری کا رجحان نہیں ملا۔ مزید جائزے مکمل کرنے سے یہاں تبدیلی ظاہر ہوگی۔</div>`;
+        : `<div class="progress-empty">ابھی شعبہ وار موازنہ کے لیے کافی جائزے موجود نہیں ہیں۔</div>`;
 
-    const feedbackMarkup = (feedback.items || []).length
-        ? feedback.items.map(item => `
+    const nextStepMarkup = nextFocus
+        ? `
             <article class="progress-section-card">
-                <div class="progress-section-label">${getFeedbackCategoryLabel(item.category)}</div>
-                <div class="progress-section-title">${item.message}</div>
-            </article>`).join("")
-        : `<div class="progress-empty">فی الحال رائے کے لیے کافی محفوظ جائزے موجود نہیں ہیں۔</div>`;
+                <div class="progress-section-title">${nextFocus.sectionTitle || nextFocus.title || nextFocus.message || "—"}</div>
+                ${nextFocus.latestPercentage != null
+                    ? `<div class="progress-section-meta">موجودہ: ${formatUrduPercent(nextFocus.latestPercentage)}</div>`
+                    : ""}
+                ${nextFocus.message && (nextFocus.sectionTitle || nextFocus.title)
+                    ? `<div class="progress-section-meta">${nextFocus.message}</div>`
+                    : ""}
+            </article>`
+        : `<div class="progress-empty">اگلے قدم کے لیے مزید جائزے مکمل کریں۔</div>`;
 
-    const suggestedDateText = nextAssessment.suggestedDate
-        ? formatAssessmentDate(nextAssessment.suggestedDate)
-        : "—";
+    const consistencyMarkup = consistencyScore != null || averageDaysBetween != null
+        ? `
+            <div class="progress-grid progress-grid--compact">
+                ${consistencyScore != null
+                    ? `<article class="progress-card"><strong>استقلال</strong><span class="progress-card-value">${formatUrduPercent(consistencyScore)}</span></article>`
+                    : ""}
+                ${averageDaysBetween != null
+                    ? `<article class="progress-card"><strong>جائزوں کا وقفہ</strong><span class="progress-card-value">${averageDaysBetween} دن</span></article>`
+                    : ""}
+            </div>`
+        : `<div class="progress-empty">استقلال کے لیے مزید جائزے درکار ہیں۔</div>`;
 
     return `
         <section class="progress-header">
-            <p>${feedback.summary || overview.trendSummary || "A brief summary of your saved assessments."}</p>
+            <p>${feedback.summary || overview.trendSummary || "آپ کے محفوظ جائزوں کا مختصر خلاصہ۔"}</p>
         </section>
 
-        <div class="progress-grid">
-            <article class="progress-card">
-                <strong>مجموعی پیش رفت</strong>
-                <span class="progress-card-value">${getTrendClassificationLabel(overallTrend.classification || "Insufficient Data")}</span>
-                <span class="progress-card-meta">${overallTrend.deltaPercentage != null ? `${overallTrend.deltaPercentage}% تبدیلی` : "مزید جائزوں کی ضرورت"}</span>
-            </article>
-
-            <article class="progress-card">
-                <strong>جائزوں کی تعداد</strong>
-                <span class="progress-card-value">${overview.assessmentCount || 0}</span>
-                <span class="progress-card-meta">${overview.assessmentFrequency?.averageDaysBetween != null ? `اوسط فاصلہ: ${overview.assessmentFrequency.averageDaysBetween} دن` : "—"}</span>
-            </article>
-
-            <article class="progress-card">
-                <strong>تازہ ترین جائزہ</strong>
-                <span class="progress-card-value">${latestAssessment ? `${latestAssessment.overallPercentage}%` : "—"}</span>
-                <span class="progress-card-meta">${latestAssessment ? formatAssessmentDate(latestAssessment.createdAt) : "—"}</span>
-            </article>
-
-            <article class="progress-card">
-                <strong>پہلا جائزہ</strong>
-                <span class="progress-card-value">${firstAssessment ? `${firstAssessment.overallPercentage}%` : "—"}</span>
-                <span class="progress-card-meta">${firstAssessment ? formatAssessmentDate(firstAssessment.createdAt) : "—"}</span>
-            </article>
-        </div>
+        <section class="progress-sections">
+            <h3>آپ کی مجموعی پیش رفت</h3>
+            <div class="progress-grid progress-grid--compact">
+                <article class="progress-card">
+                    <strong>پچھلا جائزہ</strong>
+                    <span class="progress-card-value">${firstAssessment ? formatUrduPercent(firstAssessment.overallPercentage) : "—"}</span>
+                    <span class="progress-card-meta">${firstAssessment ? formatAssessmentDate(firstAssessment.createdAt) : "—"}</span>
+                </article>
+                <article class="progress-card">
+                    <strong>تازہ جائزہ</strong>
+                    <span class="progress-card-value">${latestAssessment ? formatUrduPercent(latestAssessment.overallPercentage) : "—"}</span>
+                    <span class="progress-card-meta">${latestAssessment ? formatAssessmentDate(latestAssessment.createdAt) : "—"}</span>
+                </article>
+                <article class="progress-card progress-card--wide">
+                    <strong>مجموعی تبدیلی</strong>
+                    <span class="progress-card-value">${getTrendClassificationLabel(overallTrend.classification || "Insufficient Data")}</span>
+                    <span class="progress-card-meta">${overallTrend.deltaPercentage != null ? `${formatUrduPercent(overallTrend.deltaPercentage, { showSign: true })} تبدیلی` : "مزید جائزوں کی ضرورت"}</span>
+                </article>
+            </div>
+        </section>
 
         <section class="progress-sections">
-            <h3>شعبوں میں بہتری</h3>
+            <h3>شعبوں میں پیش رفت</h3>
             <div class="progress-section-list">${sectionMarkup}</div>
         </section>
 
         <section class="progress-sections">
-            <h3>ترقی کا منصوبہ</h3>
-            <div class="progress-subsection">
-                <h4>تجویز کردہ توجہ</h4>
-                <div class="progress-section-list">${renderStructuredList(dashboard.recommendedFocus, "ابھی کوئی توجہ کا شعبہ شناخت نہیں ہوا۔")}</div>
-            </div>
-            <div class="progress-subsection">
-                <h4>اس ہفتے کی اولویت</h4>
-                <div class="progress-section-list">${renderStructuredList(dashboard.thisWeeksPriority, "اس ہفتے کے لیے ابھی کوئی اولویت شناخت نہیں ہوئی۔")}</div>
-            </div>
-            <div class="progress-subsection">
-                <h4>ان عادات کو جاری رکھیں</h4>
-                <div class="progress-section-list">${renderStructuredList(dashboard.continueTheseHabits, "ابھی کوئی مستحکم شعبہ شناخت نہیں ہوا۔")}</div>
-            </div>
-            <div class="progress-subsection">
-                <h4>بہتری کے مواقع</h4>
-                <div class="progress-section-list">${renderStructuredList(dashboard.improvementOpportunities, "ابھی کوئی بہتری کا موقع شناخت نہیں ہوا۔")}</div>
-            </div>
-            <div class="progress-subsection">
-                <h4>اگلے جائزے کی تجویز</h4>
-                <div class="progress-empty">${nextAssessment.days ?? "—"} دن${suggestedDateText !== "—" ? ` — تقریباً ${suggestedDateText}` : ""}</div>
-            </div>
+            <h3>آپ کا استقلال</h3>
+            ${consistencyMarkup}
         </section>
 
         <section class="progress-sections">
-            <h3>راہنمائی کا خلاصہ</h3>
-            <div class="progress-section-list">${feedbackMarkup}</div>
+            <h3>اگلا قدم</h3>
+            <div class="progress-section-list">${nextStepMarkup}</div>
+        </section>
+
+        <section class="progress-sections">
+            <h3>خلاصہ</h3>
+            <div class="progress-section-card">
+                <div class="progress-section-title">${feedback.summary || overview.trendSummary || "آپ کے جائزوں کا خلاصہ یہاں ظاہر ہوگا۔"}</div>
+            </div>
         </section>`;
 
 }
@@ -1097,11 +1159,22 @@ function renderGrowthJourney() {
 
     const progressScreen = document.getElementById("progressScreen");
     const bundle = application.getGrowthBundle();
-    const activeTab = progressInsightsTab;
+    const activeTab = IS_ADMIN_MODE ? progressInsightsTab : "personal";
     const maiyaarInsights = getDomainData(bundle.maiyaarInsights);
-    const panelContent = activeTab === "maiyaar"
+    const panelContent = IS_ADMIN_MODE && activeTab === "maiyaar"
         ? renderCommunityInsightsPanel(maiyaarInsights)
         : renderPersonalProgressPanel(bundle);
+    const tabBarMarkup = IS_ADMIN_MODE ? renderInsightsTabBar(activeTab) : "";
+    const adminPanelMarkup = IS_ADMIN_MODE
+        ? `
+            <div id="insightsMaiyaarPanel"
+                class="insights-tab-panel${activeTab === "maiyaar" ? " is-active" : ""}"
+                role="tabpanel"
+                aria-labelledby="insightsMaiyaarTab"
+                ${activeTab === "maiyaar" ? "" : 'hidden'}>
+                ${activeTab === "maiyaar" ? panelContent : ""}
+            </div>`
+        : "";
 
     progressScreen.innerHTML = `
         <div class="progress-page">
@@ -1111,7 +1184,7 @@ function renderGrowthJourney() {
                 actionsHtml: renderToolbarAction("progressHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY)
             })}
 
-            ${renderInsightsTabBar(activeTab)}
+            ${tabBarMarkup}
 
             <div id="insightsPersonalPanel"
                 class="insights-tab-panel${activeTab === "personal" ? " is-active" : ""}"
@@ -1121,18 +1194,15 @@ function renderGrowthJourney() {
                 ${activeTab === "personal" ? panelContent : ""}
             </div>
 
-            <div id="insightsMaiyaarPanel"
-                class="insights-tab-panel${activeTab === "maiyaar" ? " is-active" : ""}"
-                role="tabpanel"
-                aria-labelledby="insightsMaiyaarTab"
-                ${activeTab === "maiyaar" ? "" : 'hidden'}>
-                ${activeTab === "maiyaar" ? panelContent : ""}
-            </div>
+            ${adminPanelMarkup}
         </div>`;
 
     document.getElementById("progressBackBtn")?.addEventListener("click", showWelcomeScreen);
     document.getElementById("progressHistoryBtn")?.addEventListener("click", openAssessmentHistory);
-    bindInsightsTabHandlers();
+
+    if (IS_ADMIN_MODE) {
+        bindInsightsTabHandlers();
+    }
 
 }
 
@@ -1155,7 +1225,7 @@ function formatAssessmentDate(isoDate) {
 function showHistoryScreen() {
 
     activateScreen("historyScreen", {
-        announce: `${UI_LABELS.ASSESSMENT_HISTORY} opened`
+        announce: `${UI_LABELS.ASSESSMENT_HISTORY} کھولی گئی`
     });
 
 }
@@ -1179,7 +1249,7 @@ function renderAssessmentHistory() {
         ? entries.map(entry => {
             const typeLabel = entry.type === "reflection" ? "غور و فکر" : "جائزہ";
             const percentageMarkup = entry.overallPercentage != null
-                ? `<div><strong>مجموعی فیصد</strong><span>${entry.overallPercentage}%</span></div>`
+                ? `<div><strong>مجموعی فیصد</strong><span>${formatUrduPercent(entry.overallPercentage)}</span></div>`
                 : "";
             const levelMarkup = entry.overallLevel
                 ? `<div><strong>موجودہ سطح</strong><span>${getPerformanceLevelLabel(entry.overallLevel)}</span></div>`
@@ -1231,11 +1301,11 @@ function renderAssessmentHistory() {
                 backId: "historyBackBtn",
                 actionsHtml: `
                     ${renderToolbarAction("historyProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW)}
-                    ${snapshots.length ? `<button type="button" id="clearHistoryBtn" class="secondary-btn screen-toolbar-action">Clear History</button>` : ""}`
+                    ${snapshots.length ? `<button type="button" id="clearHistoryBtn" class="secondary-btn screen-toolbar-action">تاریخ صاف کریں</button>` : ""}`
             })}
 
             <section class="history-header">
-                <p>Your assessments and personal reflections in chronological order.</p>
+                <p>آپ کے جائزے اور ذاتی غور و فکر ترتیبِ وقت کے ساتھ۔</p>
             </section>
 
             <div class="history-list timeline-list">
@@ -1599,7 +1669,7 @@ function updateProgress() {
     progressBar.value = currentNumber;
 
     const percentage = totalQuestions ? Math.round((currentNumber / totalQuestions) * 100) : 0;
-    document.getElementById("percentage").textContent = percentage + "%";
+    document.getElementById("percentage").textContent = formatUrduPercent(percentage);
 
     const nextButton = document.getElementById("nextBtn");
     const previousButton = document.getElementById("previousBtn");
@@ -1679,7 +1749,9 @@ function renderDashboard(report, options = {}) {
         ? application.getHistoricalDashboardPresentation(report, snapshot)
         : application.getDashboardPresentation(report);
     const { reportSections, insights, rawScores } = presentation;
-    const overallScoreLabel = rawScores.overall.max ? `${rawScores.overall.raw}/${rawScores.overall.max}` : `${overall.percentage}%`;
+    const overallScoreLabel = rawScores.overall.max
+        ? `${rawScores.overall.raw}/${rawScores.overall.max}`
+        : formatUrduPercent(overall.percentage);
     const assessmentDate = isHistorical && snapshot
         ? formatAssessmentDate(snapshot.createdAt)
         : new Date().toLocaleDateString("ur-PK", {
@@ -1701,7 +1773,7 @@ function renderDashboard(report, options = {}) {
             <div class="report-section-card ${sectionClass}">
                 <div class="report-section-row">
                     <div><strong>${section.title}</strong></div>
-                    <div>${section.percentage}%</div>
+                    <div>${formatUrduPercent(section.percentage)}</div>
                     <div>${sectionLevel}</div>
                 </div>
                 <div class="report-section-bar"><span style="width:${Math.max(4, section.percentage)}%"></span></div>
@@ -1709,10 +1781,20 @@ function renderDashboard(report, options = {}) {
             </div>`;
     }).join("");
 
+    const reportHubActions = `
+                ${renderQuickActionButton("openProgressFromReportBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW, "ui-quick-action-btn")}
+                ${renderQuickActionButton("openHistoryFromReportBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY, "ui-quick-action-btn")}
+                ${renderQuickActionButton("printFromReportBtn", UI_ICONS.PRINT, UI_LABELS.PRINT_REPORT, "ui-quick-action-btn")}
+                ${renderQuickActionButton("restartFromReportBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "primary-btn ui-assessment-btn")}`;
+
+    const adminReportAction = IS_ADMIN_MODE
+        ? renderQuickActionButton("openMaiyaarFromReportBtn", UI_ICONS.INSIGHTS, UI_LABELS.MAIYAAR_INSIGHTS, "ui-quick-action-btn")
+        : "";
+
     dashboard.innerHTML = `
         <div class="dashboard-report">
             ${renderScreenToolbar({
-                title: isHistorical ? UI_LABELS.ASSESSMENT_HISTORY : "Assessment Report",
+                title: isHistorical ? UI_LABELS.ASSESSMENT_HISTORY : "آپ کی رپورٹ",
                 backId: isHistorical ? "historyReportToolbarBackBtn" : "reportBackBtn",
                 actionsHtml: `<button type="button" id="printBtn" class="primary-btn btn-with-icon no-print">${UI_ICONS.PRINT} ${UI_LABELS.PRINT_REPORT}</button>`,
                 printable: true
@@ -1724,12 +1806,12 @@ function renderDashboard(report, options = {}) {
                 <h3>بر اساس معیارِ مطلوب</h3>
                 <div class="report-metrics">
                     <div>
-                        <strong>تاریخ جائزہ</strong>
+                        <strong>تاریخِ جائزہ</strong>
                         <span>${assessmentDate}</span>
                     </div>
                     <div>
                         <strong>مجموعی فیصد</strong>
-                        <span>${overall.percentage}%</span>
+                        <span>${formatUrduPercent(overall.percentage)}</span>
                     </div>
                     <div>
                         <strong>موجودہ سطح</strong>
@@ -1739,14 +1821,14 @@ function renderDashboard(report, options = {}) {
             </section>
 
             <section class="report-card report-card-blue">
-                <div class="report-card-head"><span class="report-card-icon">📊</span><h3>مجموعی نتیجہ</h3></div>
+                <div class="report-card-head"><span class="report-card-icon">📊</span><h3>آپ کا مجموعی نتیجہ</h3></div>
                 <div class="report-metrics">
                     <div>
-                        <strong>مجموعی اسکور</strong>
+                        <strong>مجموعی نمبر</strong>
                         <span>${overallScoreLabel}</span>
                     </div>
                     <div>
-                        <strong>درجہ</strong>
+                        <strong>سطح</strong>
                         <span>${overallLevelLabel}</span>
                     </div>
                 </div>
@@ -1755,38 +1837,38 @@ function renderDashboard(report, options = {}) {
 
             <section class="report-card report-card-green">
                 <div class="report-card-head"><span class="report-card-icon">🎯</span><h3>معیارِ مطلوب</h3></div>
-                <p class="report-summary-text benchmark-intro">یہ جائزہ معیارِ مطلوب کی روشنی میں ترتیب دیا گیا ہے۔ اس میں آپ کے جوابات کا تجزیہ مختلف شعبوں کے حوالے سے کیا گیا ہے۔</p>
+                <p class="report-summary-text benchmark-intro">یہ جائزہ معیارِ مطلوب کی روشنی میں ترتیب دیا گیا ہے۔ یہ آپ کے جوابات کو مختلف شعبوں میں سمجھنے میں مدد دیتا ہے۔</p>
             </section>
 
             <section class="report-card report-card-blue">
-                <div class="report-card-head"><span class="report-card-icon">📈</span><h3>تفصیلی جائزہ</h3></div>
+                <div class="report-card-head"><span class="report-card-icon">📈</span><h3>ہر شعبے کا جائزہ</h3></div>
                 <div class="report-section-list">
                     ${sectionMarkup}
                 </div>
             </section>
 
             <section class="report-card report-card-green">
-                <div class="report-card-head"><span class="report-card-icon">✅</span><h3>مضبوط شعبے</h3></div>
+                <div class="report-card-head"><span class="report-card-icon">✅</span><h3>آپ کے مضبوط شعبے</h3></div>
                 <div class="report-highlight-card">
                     <div class="report-highlight-title">${strongestSection.title}</div>
-                    <div class="report-highlight-value">${strongestSection.percentage}%</div>
+                    <div class="report-highlight-value">${formatUrduPercent(strongestSection.percentage)}</div>
                     <p class="report-summary-text">${insights.strongestSectionExplanation}</p>
                 </div>
             </section>
 
             <section class="report-card report-card-orange">
-                <div class="report-card-head"><span class="report-card-icon">🌱</span><h3>بہتری کے لیے شعبے</h3></div>
+                <div class="report-card-head"><span class="report-card-icon">🌱</span><h3>جہاں بہتری کی گنجائش ہے</h3></div>
                 <div class="report-section-list">
                     <div class="report-section-row">
                         <div><strong>${growthSection.title}</strong></div>
-                        <div>${growthSection.percentage}%</div>
+                        <div>${formatUrduPercent(growthSection.percentage)}</div>
                     </div>
                     <p class="report-summary-text">${insights.growthSectionExplanation}</p>
                 </div>
             </section>
 
             <section class="report-card report-card-red">
-                <div class="report-card-head"><span class="report-card-icon">📝</span><h3>کمزور سوالات کے اسباق</h3></div>
+                <div class="report-card-head"><span class="report-card-icon">📝</span><h3>جن باتوں پر غور کریں</h3></div>
                 <div class="report-section-list">
                     ${(insights.growthQuestionGroups || []).length
                         ? insights.growthQuestionGroups.map(group => `
@@ -1813,7 +1895,7 @@ function renderDashboard(report, options = {}) {
             </section>
 
             <section class="report-card report-card-green">
-                <div class="report-card-head"><span class="report-card-icon">🧭</span><h3>30 روزہ عملی منصوبہ</h3></div>
+                <div class="report-card-head"><span class="report-card-icon">🧭</span><h3>اگلے 30 دن کے لیے</h3></div>
                 <ul class="report-checklist">
                     ${insights.actionPlan.map(item => `<li>${item}</li>`).join("")}
                 </ul>
@@ -1844,12 +1926,9 @@ function renderDashboard(report, options = {}) {
                 <p class="report-summary-text">معیار<br>اسلامی محاسبۂ نفس<br>ورژن ${APP_VERSION}</p>
             </section>
 
-            <nav class="report-hub-nav no-print" aria-label="Report navigation">
-                ${renderQuickActionButton("openProgressFromReportBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW, "ui-quick-action-btn")}
-                ${renderQuickActionButton("openHistoryFromReportBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY, "ui-quick-action-btn")}
-                ${renderQuickActionButton("openMaiyaarFromReportBtn", UI_ICONS.INSIGHTS, UI_LABELS.MAIYAAR_INSIGHTS, "ui-quick-action-btn")}
-                ${renderQuickActionButton("printFromReportBtn", UI_ICONS.PRINT, UI_LABELS.PRINT_REPORT, "ui-quick-action-btn")}
-                ${renderQuickActionButton("restartFromReportBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "primary-btn ui-assessment-btn")}
+            <nav class="report-hub-nav no-print" aria-label="رپورٹ نیویگیشن">
+                ${reportHubActions}
+                ${adminReportAction}
             </nav>
         </div>`;
 
@@ -1865,7 +1944,11 @@ function renderDashboard(report, options = {}) {
 
     document.getElementById("openHistoryFromReportBtn")?.addEventListener("click", openAssessmentHistory);
     document.getElementById("openProgressFromReportBtn")?.addEventListener("click", openProgressJourney);
-    document.getElementById("openMaiyaarFromReportBtn")?.addEventListener("click", openMaiyaarInsights);
+
+    if (IS_ADMIN_MODE) {
+        document.getElementById("openMaiyaarFromReportBtn")?.addEventListener("click", openMaiyaarInsights);
+    }
+
     document.getElementById("printFromReportBtn")?.addEventListener("click", printReport);
     document.getElementById("printBtn")?.addEventListener("click", printReport);
     document.getElementById("restartFromReportBtn")?.addEventListener("click", startQuestionnaire);
