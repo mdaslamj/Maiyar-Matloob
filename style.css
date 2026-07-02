@@ -275,10 +275,11 @@ label:focus-visible {
     position: relative;
     width: 100%;
     display: grid;
-    gap: var(--space-sm);
+    gap: var(--welcome-section-gap, var(--space-sm));
 }
 
 .welcome-brand-block {
+    width: 100%;
     background: var(--surface);
     border: 2px solid var(--border);
     border-radius: var(--radius-lg);
@@ -289,8 +290,9 @@ label:focus-visible {
 }
 
 .welcome-dashboard {
+    width: 100%;
     display: grid;
-    gap: var(--space-sm);
+    gap: var(--welcome-section-gap, var(--space-sm));
 }
 
 .welcome-meta-panel {
@@ -2050,6 +2052,8 @@ progress::-webkit-progress-value {
 
 .dashboard-grid--welcome {
     max-width: none;
+    width: 100%;
+    margin-inline: 0;
 }
 
 @media (min-width: 900px) {
@@ -2421,21 +2425,20 @@ progress::-webkit-progress-value {
 
 .participant-section {
     display: grid;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-sm);
+    width: 100%;
+    margin: 0;
 }
 
 .participant-card {
-    max-width: 760px;
-    margin-inline: auto;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
 }
 
-.participant-card .ui-card__body {
-    padding-top: 0;
-}
-
-.participant-card__footer {
-    padding-top: 0;
+.participant-card__change {
+    justify-self: center;
+    width: auto;
+    min-width: 180px;
 }
 
 .participant-card--identified .participant-greeting {
@@ -2552,7 +2555,7 @@ progress::-webkit-progress-value {
         min-height: 0;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: var(--welcome-section-gap, var(--space-sm));
     }
 
     body.welcome-active .welcome-hero,

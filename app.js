@@ -438,60 +438,48 @@ function renderParticipantSection() {
     if (participant && !showParticipantForm) {
         section.innerHTML = `
             <article class="ui-card ui-card--action participant-card participant-card--identified">
-                <header class="ui-card__header">
-                    <h3 class="ui-card__title">شرکت کنندہ کی معلومات</h3>
-                </header>
-                <div class="ui-card__body">
-                    <p class="participant-greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
-                    ${renderParticipantAssessmentActions()}
-                </div>
-                <footer class="ui-card__footer participant-card__footer">
-                    <button type="button" id="changeParticipantBtn" class="secondary-btn">شناخت تبدیل کریں</button>
-                </footer>
+                <p class="participant-greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
+                ${renderParticipantAssessmentActions()}
+                <button type="button" id="changeParticipantBtn" class="secondary-btn participant-card__change">شناخت تبدیل کریں</button>
             </article>`;
         return;
     }
 
     section.innerHTML = `
         <article class="ui-card ui-card--action participant-card">
-            <header class="ui-card__header">
-                <h3 class="ui-card__title">شرکت کنندہ کی معلومات</h3>
-            </header>
-            <div class="ui-card__body">
-                <form id="participantForm" class="participant-form" novalidate>
-                    <label class="participant-field" for="participantName">
-                        <span class="participant-field__label">پورا نام</span>
-                        <input
-                            type="text"
-                            id="participantName"
-                            name="participantName"
-                            maxlength="100"
-                            autocomplete="name"
-                            value="${participant ? escapeHtml(participant.name) : ""}"
-                            required>
-                    </label>
-                    <p id="participantNameError" class="participant-field__error" role="alert" hidden></p>
+            <form id="participantForm" class="participant-form" novalidate>
+                <label class="participant-field" for="participantName">
+                    <span class="participant-field__label">پورا نام</span>
+                    <input
+                        type="text"
+                        id="participantName"
+                        name="participantName"
+                        maxlength="100"
+                        autocomplete="name"
+                        value="${participant ? escapeHtml(participant.name) : ""}"
+                        required>
+                </label>
+                <p id="participantNameError" class="participant-field__error" role="alert" hidden></p>
 
-                    <label class="participant-field" for="participantMobile">
-                        <span class="participant-field__label">موبائل نمبر</span>
-                        <input
-                            type="tel"
-                            id="participantMobile"
-                            name="participantMobile"
-                            inputmode="numeric"
-                            maxlength="10"
-                            autocomplete="tel"
-                            dir="ltr"
-                            value="${participant ? escapeHtml(participant.mobile) : ""}"
-                            required>
-                    </label>
-                    <p id="participantMobileError" class="participant-field__error" role="alert" hidden></p>
+                <label class="participant-field" for="participantMobile">
+                    <span class="participant-field__label">موبائل نمبر</span>
+                    <input
+                        type="tel"
+                        id="participantMobile"
+                        name="participantMobile"
+                        inputmode="numeric"
+                        maxlength="10"
+                        autocomplete="tel"
+                        dir="ltr"
+                        value="${participant ? escapeHtml(participant.mobile) : ""}"
+                        required>
+                </label>
+                <p id="participantMobileError" class="participant-field__error" role="alert" hidden></p>
 
-                    <button type="submit" class="primary-btn ui-assessment-btn full-width-btn">
-                        ${UI_LABELS.START_ASSESSMENT}
-                    </button>
-                </form>
-            </div>
+                <button type="submit" class="primary-btn ui-assessment-btn full-width-btn">
+                    ${UI_LABELS.START_ASSESSMENT}
+                </button>
+            </form>
         </article>`;
 
     document.getElementById("participantForm")?.addEventListener("submit", handleParticipantFormSubmit);
