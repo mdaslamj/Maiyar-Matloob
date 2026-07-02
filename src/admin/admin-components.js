@@ -26,6 +26,13 @@ export function formatPercent(value) {
 
 }
 
+/** @deprecated Use formatPercent — kept for backward compatibility */
+export function formatPercentage(value) {
+
+    return formatPercent(value);
+
+}
+
 export function formatDate(value) {
 
     if (!value) {

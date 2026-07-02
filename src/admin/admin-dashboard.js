@@ -1,5 +1,6 @@
 import {
     formatDate,
+    formatPercent,
     renderMetricCard,
     renderPageIntro
 } from "./admin-components.js";
