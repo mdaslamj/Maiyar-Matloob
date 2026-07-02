@@ -16,9 +16,12 @@
     <link rel="stylesheet"
           href="style.css">
 
+    <link rel="stylesheet"
+          href="welcome.css">
+
     <link rel="preload"
           as="image"
-          href="assets/images/maiyaar-home-background.jpg"
+          href="assets/images/maiyaar-architecture-background.jpg"
           type="image/jpeg">
 
 </head>
@@ -36,24 +39,26 @@
 
     <section id="welcomeScreen" class="welcome-screen">
 
-        <div class="welcome-shell">
+        <div class="welcome-page">
 
-            <header class="welcome-brand-block welcome-hero">
-                <div class="welcome-brand">
-                    <div class="welcome-icon" aria-hidden="true">✦</div>
-                    <div>
+            <header class="welcome-hero">
+                <div class="welcome-hero__brand">
+                    <div class="welcome-hero__logo" aria-hidden="true">
+                        <svg viewBox="0 0 32 32" class="welcome-svg-icon" aria-hidden="true"><path d="M8 24V11l8-4 8 4v13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 24V14h8v10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 4l1.6 2.8 3.1.4-2.2 2.2.5 3.1L16 11.2 13 12.5l.5-3.1-2.2-2.2 3.1-.4L16 4z" fill="currentColor" opacity="0.9"/></svg>
+                    </div>
+                    <div class="welcome-hero__titles">
                         <h1>معیارِ مطلوب</h1>
                         <h2>معیارِ مطلوب کی بنیاد پر خود احتسابی</h2>
                     </div>
                 </div>
-                <p class="intro">معیارِ مطلوب کی روشنی میں اپنی موجودہ کیفیت کا جائزہ لیجیے، بہتری کے مواقع کو پہچانیے، اور مسلسل اصلاح و ترقی کے سفر پر گامزن ہو جائیے۔</p>
+                <p class="welcome-hero__intro">معیارِ مطلوب کی روشنی میں اپنی موجودہ کیفیت کا جائزہ لیجیے، بہتری کے مواقع کو پہچانیے، اور مسلسل اصلاح و ترقی کے سفر پر گامزن ہو جائیے۔</p>
             </header>
 
-            <div id="participantSection" class="participant-section" aria-live="polite"></div>
+            <div id="participantSection" class="welcome-participant" aria-live="polite"></div>
 
-            <div id="welcomeDashboard" class="welcome-dashboard" aria-live="polite"></div>
+            <div id="welcomeDashboard" class="welcome-summary" aria-live="polite"></div>
 
-            <details class="welcome-meta-panel">
+            <details class="welcome-meta">
                 <summary>سوالنامے کی معلومات</summary>
                 <div class="welcome-meta-grid">
                     <div class="ui-card ui-card--compact">

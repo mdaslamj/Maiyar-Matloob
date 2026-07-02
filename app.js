@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.3.2 — Home Page UX Refinement
+// Version 2.4.1 — Welcome Page Visual Redesign
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.3.2";
+const APP_VERSION = "2.4.1";
 
 /** Reserved for future admin authentication; community analytics stay hidden until enabled. */
 const IS_ADMIN_MODE = false;
@@ -50,6 +50,17 @@ const UI_ICONS = {
     INSIGHTS: "✨",
     HOME: "🏠",
     START: "✓"
+};
+
+const WELCOME_ICON_SVGS = {
+    logo: `<svg viewBox="0 0 32 32" class="welcome-svg-icon" aria-hidden="true"><path d="M8 24V11l8-4 8 4v13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 24V14h8v10" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 4l1.6 2.8 3.1.4-2.2 2.2.5 3.1L16 11.2 13 12.5l.5-3.1-2.2-2.2 3.1-.4L16 4z" fill="currentColor" opacity="0.9"/></svg>`,
+    person: `<svg viewBox="0 0 24 24" class="welcome-svg-icon" aria-hidden="true"><circle cx="12" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 19.5c1.2-3 3.2-4.5 6.5-4.5s5.3 1.5 6.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    phone: `<svg viewBox="0 0 24 24" class="welcome-svg-icon" aria-hidden="true"><rect x="7" y="3.5" width="10" height="17" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10.5 17.5h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    start: `<svg viewBox="0 0 24 24" class="welcome-svg-icon" aria-hidden="true"><path d="M8 6.5v11l9-5.5-9-5.5z" fill="currentColor"/></svg>`,
+    continue: `<svg viewBox="0 0 24 24" class="welcome-svg-icon" aria-hidden="true"><path d="M6 12h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M13 8l5 4-5 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    restart: `<svg viewBox="0 0 24 24" class="welcome-svg-icon" aria-hidden="true"><path d="M7 7.5A7.5 7.5 0 0 1 18 9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M17 5v4h-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 16.5A7.5 7.5 0 0 1 6 15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7 19v-4h4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    history: `<svg viewBox="0 0 24 24" class="welcome-svg-icon" aria-hidden="true"><path d="M7 5.5h11a1.5 1.5 0 0 1 1.5 1.5v11a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 18V7A1.5 1.5 0 0 1 7 5.5z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 9h7M8.5 12h7M8.5 15h4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+    progress: `<svg viewBox="0 0 24 24" class="welcome-svg-icon" aria-hidden="true"><path d="M5.5 17.5l4.5-5 3.5 3 5.5-7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 19.5h13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`
 };
 
 const SCREEN_IDS = [
@@ -249,6 +260,14 @@ function renderQuickActionButton(id, icon, label, className = "ui-quick-action-b
 
 }
 
+function renderWelcomeActionButton(id, iconKey, label, className = "welcome-action-btn secondary-btn ui-assessment-btn") {
+
+    const icon = WELCOME_ICON_SVGS[iconKey] || "";
+
+    return `<button type="button" id="${id}" class="${className}"><span class="welcome-action-btn__icon" aria-hidden="true">${icon}</span><span class="welcome-action-btn__label">${escapeHtml(label)}</span></button>`;
+
+}
+
 function renderToolbarAction(id, icon, label) {
 
     return `<button type="button" id="${id}" class="nav-btn btn-with-icon"><span class="btn-icon" aria-hidden="true">${icon}</span><span>${label}</span></button>`;
@@ -405,18 +424,86 @@ function renderParticipantAssessmentActions() {
 
     if (hasIncompleteSession) {
         return `
-            <div class="participant-actions">
-                ${renderQuickActionButton("participantContinueBtn", UI_ICONS.CONTINUE, UI_LABELS.CONTINUE_ASSESSMENT, "primary-btn ui-assessment-btn full-width-btn")}
-                ${renderQuickActionButton("participantRestartBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "secondary-btn ui-assessment-btn full-width-btn")}
+            ${renderWelcomeActionButton("participantContinueBtn", "continue", UI_LABELS.CONTINUE_ASSESSMENT, "primary-btn ui-assessment-btn full-width-btn welcome-action-btn")}
+            ${renderWelcomeActionButton("participantRestartBtn", "restart", UI_LABELS.START_NEW_ASSESSMENT, "secondary-btn ui-assessment-btn full-width-btn welcome-action-btn")}`;
+    }
+
+    return renderWelcomeActionButton(
+        "participantStartBtn",
+        "start",
+        UI_LABELS.START_ASSESSMENT,
+        "primary-btn ui-assessment-btn full-width-btn welcome-action-btn"
+    );
+
+}
+
+function renderParticipantNewColumn(participant, isActive) {
+
+    return `
+        <div class="welcome-panel__column welcome-panel__column--new ${isActive ? "is-active" : "is-dimmed"}">
+            <span class="welcome-panel__kicker">نیا شرکت کنندہ</span>
+            <form id="participantForm" class="welcome-panel__form" novalidate>
+                <label class="welcome-panel__field" for="participantName">
+                    <span class="welcome-panel__label">پورا نام</span>
+                    <div class="welcome-panel__input-wrap">
+                        <span class="welcome-panel__input-icon" aria-hidden="true">${WELCOME_ICON_SVGS.person}</span>
+                        <input
+                            type="text"
+                            id="participantName"
+                            name="participantName"
+                            maxlength="100"
+                            autocomplete="name"
+                            value="${participant ? escapeHtml(participant.name) : ""}"
+                            required>
+                    </div>
+                </label>
+                <p id="participantNameError" class="welcome-panel__error" role="alert" hidden></p>
+
+                <label class="welcome-panel__field" for="participantMobile">
+                    <span class="welcome-panel__label">موبائل نمبر</span>
+                    <div class="welcome-panel__input-wrap">
+                        <span class="welcome-panel__input-icon" aria-hidden="true">${WELCOME_ICON_SVGS.phone}</span>
+                        <input
+                            type="tel"
+                            id="participantMobile"
+                            name="participantMobile"
+                            inputmode="numeric"
+                            maxlength="10"
+                            autocomplete="tel"
+                            dir="ltr"
+                            value="${participant ? escapeHtml(participant.mobile) : ""}"
+                            required>
+                    </div>
+                </label>
+                <p id="participantMobileError" class="welcome-panel__error" role="alert" hidden></p>
+
+                <button type="submit" class="primary-btn ui-assessment-btn full-width-btn welcome-action-btn">
+                    <span class="welcome-action-btn__icon" aria-hidden="true">${WELCOME_ICON_SVGS.start}</span>
+                    <span class="welcome-action-btn__label">${UI_LABELS.START_ASSESSMENT}</span>
+                </button>
+            </form>
+        </div>`;
+
+}
+
+function renderParticipantReturningColumn(participant, isActive) {
+
+    if (!isActive || !participant) {
+        return `
+            <div class="welcome-panel__column welcome-panel__column--returning is-placeholder">
+                <span class="welcome-panel__kicker welcome-panel__kicker--gold">واپس آنے والا شرکت کنندہ</span>
             </div>`;
     }
 
-    return renderQuickActionButton(
-        "participantStartBtn",
-        UI_ICONS.START,
-        UI_LABELS.START_ASSESSMENT,
-        "primary-btn ui-assessment-btn full-width-btn"
-    );
+    return `
+        <div class="welcome-panel__column welcome-panel__column--returning is-active">
+            <span class="welcome-panel__kicker welcome-panel__kicker--gold">واپس آنے والا شرکت کنندہ</span>
+            <p class="welcome-panel__greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
+            <div class="welcome-panel__actions">
+                ${renderParticipantAssessmentActions()}
+            </div>
+            <button type="button" id="changeParticipantBtn" class="welcome-panel__link">شناخت تبدیل کریں</button>
+        </div>`;
 
 }
 
@@ -435,51 +522,14 @@ function renderParticipantSection() {
         return;
     }
 
-    if (participant && !showParticipantForm) {
-        section.innerHTML = `
-            <article class="ui-card ui-card--action participant-card participant-card--identified">
-                <p class="participant-greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
-                ${renderParticipantAssessmentActions()}
-                <button type="button" id="changeParticipantBtn" class="secondary-btn participant-card__change">شناخت تبدیل کریں</button>
-            </article>`;
-        return;
-    }
+    const showReturning = Boolean(participant && !showParticipantForm);
+    const showNewForm = !showReturning;
 
     section.innerHTML = `
-        <article class="ui-card ui-card--action participant-card">
-            <form id="participantForm" class="participant-form" novalidate>
-                <label class="participant-field" for="participantName">
-                    <span class="participant-field__label">پورا نام</span>
-                    <input
-                        type="text"
-                        id="participantName"
-                        name="participantName"
-                        maxlength="100"
-                        autocomplete="name"
-                        value="${participant ? escapeHtml(participant.name) : ""}"
-                        required>
-                </label>
-                <p id="participantNameError" class="participant-field__error" role="alert" hidden></p>
-
-                <label class="participant-field" for="participantMobile">
-                    <span class="participant-field__label">موبائل نمبر</span>
-                    <input
-                        type="tel"
-                        id="participantMobile"
-                        name="participantMobile"
-                        inputmode="numeric"
-                        maxlength="10"
-                        autocomplete="tel"
-                        dir="ltr"
-                        value="${participant ? escapeHtml(participant.mobile) : ""}"
-                        required>
-                </label>
-                <p id="participantMobileError" class="participant-field__error" role="alert" hidden></p>
-
-                <button type="submit" class="primary-btn ui-assessment-btn full-width-btn">
-                    ${UI_LABELS.START_ASSESSMENT}
-                </button>
-            </form>
+        <article class="welcome-panel">
+            ${renderParticipantNewColumn(participant, showNewForm)}
+            <div class="welcome-panel__divider" role="separator" aria-hidden="true"></div>
+            ${renderParticipantReturningColumn(participant, showReturning)}
         </article>`;
 
     document.getElementById("participantForm")?.addEventListener("submit", handleParticipantFormSubmit);
@@ -638,9 +688,11 @@ function renderWelcomeDashboard() {
 
     if (!startButtonReady) {
         container.innerHTML = `
-            <div class="ui-card ui-card--status">
-                <div class="ui-card__body">
-                    <p class="ui-empty">سوالنامہ تیار ہونے کے بعد یہاں آپ کا ذاتی صفحہ ظاہر ہوگا۔</p>
+            <div class="welcome-summary__grid">
+                <div class="welcome-summary-card ui-card ui-card--status">
+                    <div class="ui-card__body">
+                        <p class="ui-empty">سوالنامہ تیار ہونے کے بعد یہاں آپ کا ذاتی صفحہ ظاہر ہوگا۔</p>
+                    </div>
                 </div>
             </div>`;
         return;
@@ -652,10 +704,10 @@ function renderWelcomeDashboard() {
     const overview = growthDashboard.overview || {};
 
     container.innerHTML = `
-        <div class="dashboard-grid dashboard-grid--launcher dashboard-grid--responsive dashboard-grid--welcome">
+        <div class="welcome-summary__grid">
             ${renderUICard({
                 type: "status",
-                className: "dashboard-card dashboard-card--status",
+                className: "welcome-summary-card dashboard-card dashboard-card--status",
                 title: "آج کی کیفیت",
                 bodyHtml: `
                     <div class="ui-metric-grid ui-metric-grid--compact">
@@ -667,18 +719,18 @@ function renderWelcomeDashboard() {
 
             ${renderUICard({
                 type: "summary",
-                className: "dashboard-card dashboard-card--history",
+                className: "welcome-summary-card dashboard-card dashboard-card--history",
                 title: UI_LABELS.ASSESSMENT_HISTORY,
                 bodyHtml: `<p class="ui-card__text">اپنے پچھلے جائزوں اور غور و فکر کو دیکھیں۔</p>`,
-                footerHtml: renderQuickActionButton("welcomeHistoryBtn", UI_ICONS.HISTORY, UI_LABELS.OPEN_ASSESSMENT_HISTORY, "secondary-btn ui-assessment-btn")
+                footerHtml: renderWelcomeActionButton("welcomeHistoryBtn", "history", UI_LABELS.OPEN_ASSESSMENT_HISTORY, "secondary-btn ui-assessment-btn welcome-action-btn")
             })}
 
             ${renderUICard({
                 type: "summary",
-                className: "dashboard-card dashboard-card--progress",
+                className: "welcome-summary-card dashboard-card dashboard-card--progress",
                 title: UI_LABELS.PROGRESS_REVIEW,
                 bodyHtml: `<p class="ui-card__text">پچھلے اور تازہ جائزے کا موازنہ دیکھیں۔</p>`,
-                footerHtml: renderQuickActionButton("welcomeProgressBtn", UI_ICONS.PROGRESS, UI_LABELS.OPEN_PROGRESS_REVIEW, "secondary-btn ui-assessment-btn")
+                footerHtml: renderWelcomeActionButton("welcomeProgressBtn", "progress", UI_LABELS.OPEN_PROGRESS_REVIEW, "secondary-btn ui-assessment-btn welcome-action-btn")
             })}
         </div>`;
 

@@ -1,4 +1,4 @@
-/* ===============================
+﻿/* ===============================
    محاسبۂ نفس
    Final Professional UI Polish
 ================================ */
@@ -103,7 +103,7 @@ body.welcome-active::after {
 
 body.welcome-active::before {
     z-index: -2;
-    background-image: url("assets/images/maiyaar-home-background.jpg");
+    background-image: url("assets/images/maiyaar-architecture-background.jpg");
     background-position: center center;
     background-size: cover;
     background-repeat: no-repeat;
@@ -112,7 +112,7 @@ body.welcome-active::before {
 
 body.welcome-active::after {
     z-index: -1;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(251, 247, 240, 0.58);
 }
 
 .container {
@@ -125,8 +125,9 @@ body.welcome-active::after {
 }
 
 #mainContent,
-.welcome-shell,
-.welcome-dashboard,
+.welcome-page,
+.welcome-summary,
+.welcome-summary__grid,
 .dashboard-grid,
 .ui-card,
 .screen-toolbar,
@@ -262,136 +263,7 @@ label:focus-visible {
     }
 }
 
-/* ===============================
-   Landing Page
-================================ */
-
-.welcome-screen {
-    position: relative;
-    padding: var(--space-xs) 0 var(--space-sm);
-}
-
-.welcome-shell {
-    position: relative;
-    width: 100%;
-    display: grid;
-    gap: var(--welcome-section-gap, var(--space-sm));
-}
-
-.welcome-brand-block {
-    width: 100%;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 12px 16px;
-    box-shadow: var(--shadow-soft);
-    display: grid;
-    gap: 6px;
-}
-
-.welcome-dashboard {
-    width: 100%;
-    display: grid;
-    gap: var(--welcome-section-gap, var(--space-sm));
-}
-
-.welcome-meta-panel {
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 10px 14px;
-    box-shadow: var(--shadow-soft);
-}
-
-.welcome-meta-panel summary {
-    cursor: pointer;
-    font-weight: 700;
-    color: var(--primary-dark);
-    list-style: none;
-}
-
-.welcome-meta-panel summary::-webkit-details-marker {
-    display: none;
-}
-
-.welcome-meta-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-sm);
-    margin: var(--space-md) 0;
-}
-
-.welcome-card {
-    width: 100%;
-    max-width: 760px;
-    background: #ffffff;
-    border: 2px solid #d7dfec;
-    border-radius: 24px;
-    padding: 32px 30px 28px;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-    display: grid;
-    gap: 22px;
-}
-
-.welcome-brand {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 0;
-}
-
-.brand-kicker {
-    display: inline-block;
-    margin-bottom: 2px;
-    padding: 2px 8px;
-    border-radius: var(--radius-pill);
-    background: #eff6ff;
-    color: #2563eb;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-.welcome-icon {
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-md);
-    background: #eff6ff;
-    color: #2563eb;
-    font-size: 18px;
-    box-shadow: none;
-    flex-shrink: 0;
-}
-
-.welcome-card h1,
-.welcome-brand-block h1 {
-    font-size: clamp(22px, 3.5vw, 30px);
-    margin-bottom: 0;
-    font-weight: 700;
-    color: #0f172a;
-    line-height: 1.25;
-}
-
-.welcome-card h2,
-.welcome-brand-block h2 {
-    font-size: clamp(14px, 2.2vw, 18px);
-    margin-bottom: 0;
-    font-weight: 600;
-    color: #475569;
-    line-height: 1.35;
-}
-
-.intro {
-    text-align: center;
-    margin: 0 auto;
-    color: #475569;
-    max-width: 680px;
-    font-size: clamp(13px, 1.6vw, 15px);
-    line-height: 1.55;
-}
+/* Welcome page layout and theme: welcome.css */
 
 .infoBox {
     display: grid;
@@ -2050,18 +1922,6 @@ progress::-webkit-progress-value {
     gap: var(--space-sm);
 }
 
-.dashboard-grid--welcome {
-    max-width: none;
-    width: 100%;
-    margin-inline: 0;
-}
-
-@media (min-width: 900px) {
-    .dashboard-grid--welcome {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
 .report-hub-nav {
     display: grid;
     gap: var(--space-sm);
@@ -2295,24 +2155,8 @@ progress::-webkit-progress-value {
         padding-block: var(--space-xs) var(--space-md);
     }
 
-    .welcome-shell,
-    .welcome-dashboard,
-    .dashboard-grid {
+    .welcome-page {
         gap: var(--space-sm);
-    }
-
-    .welcome-brand-block {
-        padding: var(--space-sm) var(--space-md);
-    }
-
-    .welcome-icon {
-        width: 30px;
-        height: 30px;
-        font-size: 16px;
-    }
-
-    .welcome-meta-panel {
-        padding: var(--space-sm) var(--space-md);
     }
 
     .dashboard-grid--responsive {
@@ -2326,11 +2170,6 @@ progress::-webkit-progress-value {
     .dashboard-card--status { order: 1; }
     .dashboard-card--history { order: 2; }
     .dashboard-card--progress { order: 3; }
-
-    body.welcome-active .welcome-shell .ui-card,
-    body.welcome-active .welcome-dashboard .ui-card {
-        padding: 10px 12px;
-    }
 
     .ui-card {
         padding: var(--space-sm) var(--space-md);
@@ -2416,169 +2255,5 @@ progress::-webkit-progress-value {
 
     .ui-ranked-list__item {
         padding: 8px 10px;
-    }
-}
-
-/* ===============================
-   Participant Identity
-================================ */
-
-.participant-section {
-    display: grid;
-    width: 100%;
-    margin: 0;
-}
-
-.participant-card {
-    width: 100%;
-    max-width: none;
-    margin-inline: 0;
-}
-
-.participant-card__change {
-    justify-self: center;
-    width: auto;
-    min-width: 180px;
-}
-
-.participant-card--identified .participant-greeting {
-    margin: 0 0 8px;
-    font-size: clamp(16px, 2vw, 20px);
-    line-height: 1.45;
-}
-
-.participant-actions {
-    display: grid;
-    gap: 8px;
-}
-
-.participant-form {
-    display: grid;
-    gap: 8px;
-}
-
-.participant-field {
-    display: grid;
-    gap: 6px;
-}
-
-.participant-field__label {
-    color: var(--muted);
-    font-size: 14px;
-    font-weight: 700;
-}
-
-.participant-field input {
-    width: 100%;
-    min-height: var(--touch-target);
-    padding: 10px 12px;
-    border: 2px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    font: inherit;
-    color: var(--text);
-}
-
-.participant-field input:focus-visible {
-    outline: 3px solid rgba(37, 99, 235, 0.2);
-    border-color: #2563eb;
-}
-
-.participant-field__error {
-    color: #991b1b;
-    background: #fff7f7;
-    border: 1px solid #fecaca;
-    border-radius: var(--radius-sm);
-    padding: 6px 8px;
-    font-size: 14px;
-    line-height: 1.45;
-}
-
-.participant-field__error[hidden] {
-    display: none;
-}
-
-.welcome-personal-greeting {
-    max-width: 760px;
-    margin: 0 auto var(--space-sm);
-    padding: 10px 12px;
-    border-radius: var(--radius-md);
-    background: var(--primary-soft);
-    border: 1px solid #bfdbfe;
-}
-
-.welcome-personal-greeting p {
-    margin: 0;
-    color: var(--primary-dark);
-    font-size: clamp(18px, 2.4vw, 22px);
-}
-
-.welcome-personal-greeting strong {
-    font-weight: 700;
-}
-
-@media (min-width: 769px) {
-    body.welcome-active {
-        overflow: hidden;
-        height: 100dvh;
-    }
-
-    body.welcome-active .container {
-        height: 100dvh;
-        max-height: 100dvh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        padding: 10px 16px;
-        min-height: 0;
-    }
-
-    body.welcome-active #mainContent {
-        flex: 1;
-        min-height: 0;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-    }
-
-    body.welcome-active .welcome-screen {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-    }
-
-    body.welcome-active .welcome-shell {
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--welcome-section-gap, var(--space-sm));
-    }
-
-    body.welcome-active .welcome-hero,
-    body.welcome-active .participant-section,
-    body.welcome-active .welcome-meta-panel {
-        flex-shrink: 0;
-    }
-
-    body.welcome-active .welcome-dashboard {
-        flex: 1;
-        min-height: 0;
-    }
-
-    body.welcome-active .ui-metric-grid--compact {
-        gap: 6px;
-    }
-
-    body.welcome-active .ui-metric {
-        padding: 6px 8px;
-    }
-
-    body.welcome-active .ui-card__text {
-        font-size: 14px;
-        line-height: 1.45;
     }
 }
