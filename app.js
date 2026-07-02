@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.3.1 — Home Page Background Enhancement
+// Version 2.3.2 — Home Page UX Refinement
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.3.2";
 
 /** Reserved for future admin authentication; community analytics stay hidden until enabled. */
 const IS_ADMIN_MODE = false;
@@ -387,15 +387,6 @@ function handleWelcomeDashboardClick(event) {
     }
 
     switch (button.getAttribute("data-action")) {
-        case "start-assessment":
-            startQuestionnaire();
-            break;
-        case "continue-assessment":
-            continueQuestionnaire();
-            break;
-        case "restart-assessment":
-            restartQuestionnaireFromWelcome();
-            break;
         case "open-history":
             openAssessmentHistory();
             break;
@@ -405,6 +396,27 @@ function handleWelcomeDashboardClick(event) {
         default:
             break;
     }
+
+}
+
+function renderParticipantAssessmentActions() {
+
+    const hasIncompleteSession = application.hasIncompleteSession();
+
+    if (hasIncompleteSession) {
+        return `
+            <div class="participant-actions">
+                ${renderQuickActionButton("participantContinueBtn", UI_ICONS.CONTINUE, UI_LABELS.CONTINUE_ASSESSMENT, "primary-btn ui-assessment-btn full-width-btn")}
+                ${renderQuickActionButton("participantRestartBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "secondary-btn ui-assessment-btn full-width-btn")}
+            </div>`;
+    }
+
+    return renderQuickActionButton(
+        "participantStartBtn",
+        UI_ICONS.START,
+        UI_LABELS.START_ASSESSMENT,
+        "primary-btn ui-assessment-btn full-width-btn"
+    );
 
 }
 
@@ -427,13 +439,13 @@ function renderParticipantSection() {
         section.innerHTML = `
             <article class="ui-card ui-card--action participant-card participant-card--identified">
                 <header class="ui-card__header">
-                    <span class="ui-card__kicker">خوش آمدید</span>
-                    <h3 class="ui-card__title participant-greeting">${escapeHtml(participant.name)}</h3>
+                    <h3 class="ui-card__title">شرکت کنندہ کی معلومات</h3>
                 </header>
                 <div class="ui-card__body">
-                    <p class="ui-card__text">آپ کا جائزہ اسی شناخت کے ساتھ محفوظ ہوگا۔</p>
+                    <p class="participant-greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
+                    ${renderParticipantAssessmentActions()}
                 </div>
-                <footer class="ui-card__footer">
+                <footer class="ui-card__footer participant-card__footer">
                     <button type="button" id="changeParticipantBtn" class="secondary-btn">شناخت تبدیل کریں</button>
                 </footer>
             </article>`;
@@ -443,11 +455,9 @@ function renderParticipantSection() {
     section.innerHTML = `
         <article class="ui-card ui-card--action participant-card">
             <header class="ui-card__header">
-                <span class="ui-card__kicker">معیار</span>
                 <h3 class="ui-card__title">شرکت کنندہ کی معلومات</h3>
             </header>
             <div class="ui-card__body">
-                <p class="ui-card__text">جائزہ شروع کرنے سے پہلے براہِ کرم اپنا نام اور موبائل نمبر درج کریں۔</p>
                 <form id="participantForm" class="participant-form" novalidate>
                     <label class="participant-field" for="participantName">
                         <span class="participant-field__label">پورا نام</span>
@@ -477,7 +487,7 @@ function renderParticipantSection() {
                     </label>
                     <p id="participantMobileError" class="participant-field__error" role="alert" hidden></p>
 
-                    <button type="submit" id="participantStartBtn" class="primary-btn ui-assessment-btn full-width-btn">
+                    <button type="submit" class="primary-btn ui-assessment-btn full-width-btn">
                         ${UI_LABELS.START_ASSESSMENT}
                     </button>
                 </form>
@@ -485,6 +495,31 @@ function renderParticipantSection() {
         </article>`;
 
     document.getElementById("participantForm")?.addEventListener("submit", handleParticipantFormSubmit);
+
+}
+
+function handleParticipantSectionClick(event) {
+
+    if (event.target.closest("#changeParticipantBtn")) {
+        showParticipantForm = true;
+        renderParticipantSection();
+        document.getElementById("participantName")?.focus();
+        return;
+    }
+
+    if (event.target.closest("#participantStartBtn")) {
+        startQuestionnaire({ skipParticipantCheck: true });
+        return;
+    }
+
+    if (event.target.closest("#participantContinueBtn")) {
+        continueQuestionnaire();
+        return;
+    }
+
+    if (event.target.closest("#participantRestartBtn")) {
+        restartQuestionnaireFromWelcome();
+    }
 
 }
 
@@ -565,16 +600,6 @@ function handleParticipantFormSubmit(event) {
 
 }
 
-function handleParticipantSectionClick(event) {
-
-    if (event.target.closest("#changeParticipantBtn")) {
-        showParticipantForm = true;
-        renderParticipantSection();
-        document.getElementById("participantName")?.focus();
-    }
-
-}
-
 function handleParticipantSectionInput(event) {
 
     if (event.target.id !== "participantMobile") {
@@ -637,29 +662,9 @@ function renderWelcomeDashboard() {
     const dashboard = getDomainData(bundle.dashboard);
     const growthDashboard = getDomainData(bundle.growthDashboard);
     const overview = growthDashboard.overview || {};
-    const hasIncompleteSession = application.hasIncompleteSession();
-    const participant = application.getCurrentParticipant();
-    const welcomeGreeting = participant
-        ? `<div class="welcome-personal-greeting"><p>خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p></div>`
-        : "";
-
-    const assessmentActions = hasIncompleteSession
-        ? `
-            ${renderQuickActionButton("continueSessionBtn", UI_ICONS.CONTINUE, UI_LABELS.CONTINUE_ASSESSMENT, "primary-btn ui-assessment-btn")}
-            <p class="ui-action-divider" aria-hidden="true">or</p>
-            ${renderQuickActionButton("restartSessionBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "secondary-btn ui-assessment-btn")}`
-        : renderQuickActionButton("startButton", UI_ICONS.START, UI_LABELS.START_ASSESSMENT, "primary-btn ui-assessment-btn");
 
     container.innerHTML = `
-        ${welcomeGreeting}
-        <div class="dashboard-grid dashboard-grid--launcher dashboard-grid--responsive">
-            ${renderUICard({
-                type: "action",
-                className: "dashboard-card dashboard-card--assessment",
-                title: "جائزہ",
-                footerHtml: `<div class="ui-action-stack ui-action-stack--assessment">${assessmentActions}</div>`
-            })}
-
+        <div class="dashboard-grid dashboard-grid--launcher dashboard-grid--responsive dashboard-grid--welcome">
             ${renderUICard({
                 type: "status",
                 className: "dashboard-card dashboard-card--status",
@@ -690,9 +695,6 @@ function renderWelcomeDashboard() {
         </div>`;
 
     const actionMap = {
-        startButton: "start-assessment",
-        continueSessionBtn: "continue-assessment",
-        restartSessionBtn: "restart-assessment",
         welcomeHistoryBtn: "open-history",
         welcomeProgressBtn: "open-progress"
     };
