@@ -50,7 +50,15 @@ import {
     saveJournalEntry,
     deleteJournalEntry
 } from "../journal/journal-engine.js";
-import { isDomainSuccess, createSuccess } from "../shared/errors/domain-result.js";
+import {
+    clearCurrentParticipant,
+    findParticipantByMobile,
+    listSnapshotsForParticipant,
+    loadCurrentParticipant,
+    recordParticipantAssessment,
+    resolveParticipantIdentity
+} from "../participant/participant-storage.js";
+import { toReportParticipant } from "../participant/participant-identity.js";
 
 const APP_VERSION = "2.1.0";
 
@@ -100,6 +108,23 @@ class ApplicationService {
         this.questionnaireReady = false;
         this.contentVersion = "unknown";
         this._growthPipelineCache = null;
+        this.currentParticipant = null;
+
+    }
+
+    _getParticipantScopedSnapshots() {
+
+        const snapshots = listSnapshots();
+
+        if (!this.currentParticipant?.participantId) {
+            return snapshots;
+        }
+
+        return listSnapshotsForParticipant(
+            this.currentParticipant.participantId,
+            snapshots,
+            snapshotId => getSnapshotReport(snapshotId)
+        );
 
     }
 
@@ -111,12 +136,13 @@ class ApplicationService {
 
     _buildGrowthCacheKey() {
 
-        const snapshots = listSnapshots();
+        const snapshots = this._getParticipantScopedSnapshots();
         const journalEntries = listJournalEntries();
         const latestSnapshot = snapshots[0];
         const latestJournal = journalEntries[0];
 
         return [
+            this.currentParticipant?.participantId || "none",
             snapshots.length,
             latestSnapshot?.snapshotId || "none",
             latestSnapshot?.createdAt || "none",
@@ -136,7 +162,7 @@ class ApplicationService {
             return this._growthPipelineCache.data;
         }
 
-        const trendResult = computeTrends(listSnapshots());
+        const trendResult = computeTrends(this._getParticipantScopedSnapshots());
         const actionPlanResult = generateActionPlan(trendResult);
         const reassessmentResult = computeSuggestedReassessment(trendResult, actionPlanResult);
         const feedbackResult = generateFeedback(trendResult, actionPlanResult, reassessmentResult);
@@ -169,7 +195,7 @@ class ApplicationService {
             reassessmentResult,
             feedbackResult
         } = pipeline;
-        const snapshots = listSnapshots();
+        const snapshots = this._getParticipantScopedSnapshots();
         const journalEntries = listJournalEntries();
 
         return {
@@ -214,6 +240,7 @@ class ApplicationService {
         this.contentVersion = data.version || data.metadata?.contentVersion || "unknown";
         this.questionnaireReady = true;
         this.answers = loadAnswers();
+        this.currentParticipant = loadCurrentParticipant();
 
     }
 
@@ -265,6 +292,46 @@ class ApplicationService {
 
     }
 
+    getCurrentParticipant() {
+
+        return this.currentParticipant;
+
+    }
+
+    hasCurrentParticipant() {
+
+        return Boolean(this.currentParticipant?.participantId);
+
+    }
+
+    findParticipantByMobile(mobile) {
+
+        return findParticipantByMobile(mobile);
+
+    }
+
+    identifyParticipant(name, mobile) {
+
+        const result = resolveParticipantIdentity(name, mobile);
+
+        if (!result.valid) {
+            return result;
+        }
+
+        this.currentParticipant = result.participant;
+
+        return result;
+
+    }
+
+    clearCurrentParticipant() {
+
+        clearCurrentParticipant();
+        this.currentParticipant = null;
+        this._invalidateGrowthCache();
+
+    }
+
     getReportContext() {
 
         return {
@@ -300,7 +367,8 @@ class ApplicationService {
 
         saveSession({
             currentQuestion: this.currentQuestion,
-            isSubmitted: this.isSubmitted
+            isSubmitted: this.isSubmitted,
+            participantId: this.currentParticipant?.participantId || null
         });
 
     }
@@ -318,6 +386,16 @@ class ApplicationService {
 
         const session = loadSession();
         const maxQuestionIndex = Math.max(this.questionnaire.length - 1, 0);
+
+        if (session?.participantId && this.currentParticipant?.participantId !== session.participantId) {
+            this.currentParticipant = loadCurrentParticipant();
+
+            if (this.currentParticipant?.participantId !== session.participantId) {
+                return {
+                    type: "none"
+                };
+            }
+        }
 
         if (session?.isSubmitted) {
             const report = loadReport();
@@ -378,6 +456,12 @@ class ApplicationService {
             this.responseScale,
             (question, index) => this.getQuestionKey(question, index)
         );
+
+        if (this.currentParticipant) {
+            report.participant = toReportParticipant(this.currentParticipant);
+            recordParticipantAssessment(this.currentParticipant.participantId);
+            this.currentParticipant = loadCurrentParticipant();
+        }
 
         saveReport(report);
         this.persistSession();

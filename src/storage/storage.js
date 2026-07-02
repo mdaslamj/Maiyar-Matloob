@@ -106,6 +106,18 @@ export function saveJournalStore(store) {
 
 }
 
+export function loadParticipantsStore() {
+
+    return adapter.loadParticipantsStore();
+
+}
+
+export function saveParticipantsStore(store) {
+
+    adapter.saveParticipantsStore(store);
+
+}
+
 export {
     getLastStorageIssue,
     clearLastStorageIssue,
@@ -130,5 +142,7 @@ export const StorageService = {
     deleteHistoryReport,
     clearHistoryReports,
     loadJournalStore,
-    saveJournalStore
+    saveJournalStore,
+    loadParticipantsStore,
+    saveParticipantsStore
 };

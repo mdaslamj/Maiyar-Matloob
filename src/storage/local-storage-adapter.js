@@ -9,7 +9,8 @@ export const STORAGE_KEYS = {
     REPORT: "mahasaba-nafs-report",
     HISTORY: "mahasaba-nafs-history",
     HISTORY_REPORTS: "mahasaba-nafs-history-reports",
-    JOURNAL: "mahasaba-nafs-journal"
+    JOURNAL: "mahasaba-nafs-journal",
+    PARTICIPANTS: "mahasaba-nafs-participants"
 };
 
 const CLEAR_KEYS = [
@@ -42,7 +43,8 @@ function saveSession(session) {
     tryStorageWrite(() => {
         localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify({
             currentQuestion: session.currentQuestion,
-            isSubmitted: session.isSubmitted
+            isSubmitted: session.isSubmitted,
+            participantId: session.participantId || null
         }));
     }, "session");
 
@@ -222,6 +224,40 @@ function saveJournalStore(store) {
 
 }
 
+function loadParticipantsStore() {
+
+    const stored = localStorage.getItem(STORAGE_KEYS.PARTICIPANTS);
+    const fallback = {
+        schemaVersion: 1,
+        currentParticipantId: null,
+        participants: {}
+    };
+    const parsed = safeParseJson(stored, fallback, "participants");
+
+    return {
+        schemaVersion: parsed.value?.schemaVersion ?? 1,
+        currentParticipantId: parsed.value?.currentParticipantId || null,
+        participants: parsed.value?.participants && typeof parsed.value.participants === "object"
+            ? parsed.value.participants
+            : {}
+    };
+
+}
+
+function saveParticipantsStore(store) {
+
+    tryStorageWrite(() => {
+        localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify({
+            schemaVersion: 1,
+            currentParticipantId: store?.currentParticipantId || null,
+            participants: store?.participants && typeof store.participants === "object"
+                ? store.participants
+                : {}
+        }));
+    }, "participants");
+
+}
+
 export function createLocalStorageAdapter() {
 
     return {
@@ -241,7 +277,9 @@ export function createLocalStorageAdapter() {
         deleteHistoryReport,
         clearHistoryReports,
         loadJournalStore,
-        saveJournalStore
+        saveJournalStore,
+        loadParticipantsStore,
+        saveParticipantsStore
     };
 
 }

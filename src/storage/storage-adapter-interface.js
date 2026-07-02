@@ -14,7 +14,9 @@ export const STORAGE_ADAPTER_METHODS = [
     "deleteHistoryReport",
     "clearHistoryReports",
     "loadJournalStore",
-    "saveJournalStore"
+    "saveJournalStore",
+    "loadParticipantsStore",
+    "saveParticipantsStore"
 ];
 
 export function assertStorageAdapter(adapter, adapterName = "StorageAdapter") {

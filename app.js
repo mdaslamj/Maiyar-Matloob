@@ -1,6 +1,6 @@
 // =======================================
 // محاسبۂ نفس
-// Version 2.1.6 — Product Refinement & UX Polish
+// Version 2.3.0 — Participant Identity Foundation
 // Production Architecture
 // =======================================
 
@@ -12,7 +12,7 @@ import {
     STORAGE_USER_MESSAGES
 } from "./src/storage/storage.js";
 
-const APP_VERSION = "2.1.6";
+const APP_VERSION = "2.3.0";
 
 /** Reserved for future admin authentication; community analytics stay hidden until enabled. */
 const IS_ADMIN_MODE = false;
@@ -62,6 +62,7 @@ const SCREEN_IDS = [
 ];
 
 let progressInsightsTab = "personal";
+let showParticipantForm = false;
 
 function escapeHtml(value) {
 
@@ -311,6 +312,7 @@ async function loadQuestionnaire() {
 
         updateProgress();
         setQuestionnaireLoadState("ready");
+        renderParticipantSection();
         renderWelcomeDashboard();
         refreshStorageStatusBanner();
         restorePersistedState();
@@ -341,6 +343,7 @@ function setQuestionnaireLoadState(state) {
     }
 
     if (state === "ready") {
+        renderParticipantSection();
         renderWelcomeDashboard();
     }
 
@@ -349,6 +352,8 @@ function setQuestionnaireLoadState(state) {
 function bindEvents() {
 
     document.getElementById("welcomeDashboard")?.addEventListener("click", handleWelcomeDashboardClick);
+    document.getElementById("participantSection")?.addEventListener("click", handleParticipantSectionClick);
+    document.getElementById("participantSection")?.addEventListener("input", handleParticipantSectionInput);
     document.getElementById("questionContainer")?.addEventListener("click", handleQuestionContainerClick);
     document.getElementById("questionContainer")?.addEventListener("change", handleAnswerSelection);
 
@@ -400,6 +405,212 @@ function handleWelcomeDashboardClick(event) {
 
 }
 
+function renderParticipantSection() {
+
+    const section = document.getElementById("participantSection");
+    const participant = application.getCurrentParticipant();
+    const ready = application.questionnaireReady && application.questionnaire.length > 0;
+
+    if (!section) {
+        return;
+    }
+
+    if (!ready) {
+        section.innerHTML = "";
+        return;
+    }
+
+    if (participant && !showParticipantForm) {
+        section.innerHTML = `
+            <article class="ui-card ui-card--action participant-card participant-card--identified">
+                <header class="ui-card__header">
+                    <span class="ui-card__kicker">خوش آمدید</span>
+                    <h3 class="ui-card__title participant-greeting">${escapeHtml(participant.name)}</h3>
+                </header>
+                <div class="ui-card__body">
+                    <p class="ui-card__text">آپ کا جائزہ اسی شناخت کے ساتھ محفوظ ہوگا۔</p>
+                </div>
+                <footer class="ui-card__footer">
+                    <button type="button" id="changeParticipantBtn" class="secondary-btn">شناخت تبدیل کریں</button>
+                </footer>
+            </article>`;
+        return;
+    }
+
+    section.innerHTML = `
+        <article class="ui-card ui-card--action participant-card">
+            <header class="ui-card__header">
+                <span class="ui-card__kicker">معیار</span>
+                <h3 class="ui-card__title">شرکت کنندہ کی معلومات</h3>
+            </header>
+            <div class="ui-card__body">
+                <p class="ui-card__text">جائزہ شروع کرنے سے پہلے براہِ کرم اپنا نام اور موبائل نمبر درج کریں۔</p>
+                <form id="participantForm" class="participant-form" novalidate>
+                    <label class="participant-field" for="participantName">
+                        <span class="participant-field__label">پورا نام</span>
+                        <input
+                            type="text"
+                            id="participantName"
+                            name="participantName"
+                            maxlength="100"
+                            autocomplete="name"
+                            value="${participant ? escapeHtml(participant.name) : ""}"
+                            required>
+                    </label>
+                    <p id="participantNameError" class="participant-field__error" role="alert" hidden></p>
+
+                    <label class="participant-field" for="participantMobile">
+                        <span class="participant-field__label">موبائل نمبر</span>
+                        <input
+                            type="tel"
+                            id="participantMobile"
+                            name="participantMobile"
+                            inputmode="numeric"
+                            maxlength="10"
+                            autocomplete="tel"
+                            dir="ltr"
+                            value="${participant ? escapeHtml(participant.mobile) : ""}"
+                            required>
+                    </label>
+                    <p id="participantMobileError" class="participant-field__error" role="alert" hidden></p>
+
+                    <button type="submit" id="participantStartBtn" class="primary-btn ui-assessment-btn full-width-btn">
+                        ${UI_LABELS.START_ASSESSMENT}
+                    </button>
+                </form>
+            </div>
+        </article>`;
+
+    document.getElementById("participantForm")?.addEventListener("submit", handleParticipantFormSubmit);
+
+}
+
+function clearParticipantFieldErrors() {
+
+    ["participantNameError", "participantMobileError"].forEach(id => {
+        const element = document.getElementById(id);
+
+        if (element) {
+            element.hidden = true;
+            element.textContent = "";
+        }
+    });
+
+}
+
+function showParticipantFieldErrors(errors = {}) {
+
+    clearParticipantFieldErrors();
+
+    if (errors.name) {
+        const nameError = document.getElementById("participantNameError");
+
+        if (nameError) {
+            nameError.hidden = false;
+            nameError.textContent = errors.name;
+        }
+    }
+
+    if (errors.mobile) {
+        const mobileError = document.getElementById("participantMobileError");
+
+        if (mobileError) {
+            mobileError.hidden = false;
+            mobileError.textContent = errors.mobile;
+        }
+    }
+
+}
+
+function submitParticipantIdentity(options = {}) {
+
+    const nameInput = document.getElementById("participantName");
+    const mobileInput = document.getElementById("participantMobile");
+    const result = application.identifyParticipant(
+        nameInput?.value || "",
+        mobileInput?.value || ""
+    );
+
+    if (!result.valid) {
+        showParticipantFieldErrors(result.errors || {});
+        nameInput?.focus();
+        return false;
+    }
+
+    clearParticipantFieldErrors();
+    showParticipantForm = false;
+    renderParticipantSection();
+    renderWelcomeDashboard();
+    refreshStorageStatusBanner();
+
+    if (result.isReturning) {
+        announceToScreenReader(`${result.participant.name} کی شناخت لوڈ ہو گئی`);
+    }
+
+    if (options.startAssessment) {
+        startQuestionnaire({ skipParticipantCheck: true });
+    }
+
+    return true;
+
+}
+
+function handleParticipantFormSubmit(event) {
+
+    event.preventDefault();
+    submitParticipantIdentity({ startAssessment: true });
+
+}
+
+function handleParticipantSectionClick(event) {
+
+    if (event.target.closest("#changeParticipantBtn")) {
+        showParticipantForm = true;
+        renderParticipantSection();
+        document.getElementById("participantName")?.focus();
+    }
+
+}
+
+function handleParticipantSectionInput(event) {
+
+    if (event.target.id !== "participantMobile") {
+        return;
+    }
+
+    const mobile = event.target.value;
+    const existing = application.findParticipantByMobile(mobile);
+    const nameInput = document.getElementById("participantName");
+
+    if (!existing || !nameInput || nameInput.value.trim()) {
+        return;
+    }
+
+    nameInput.value = existing.name;
+
+}
+
+function ensureParticipantIdentity() {
+
+    if (application.hasCurrentParticipant()) {
+        return true;
+    }
+
+    const nameInput = document.getElementById("participantName");
+    const mobileInput = document.getElementById("participantMobile");
+
+    if (nameInput?.value.trim() && mobileInput?.value.trim()) {
+        return submitParticipantIdentity();
+    }
+
+    showParticipantForm = true;
+    renderParticipantSection();
+    document.getElementById("participantName")?.focus();
+    announceToScreenReader("براہِ کرم پہلے اپنی شناخت درج کریں");
+    return false;
+
+}
+
 function renderWelcomeDashboard() {
 
     const container = document.getElementById("welcomeDashboard");
@@ -424,6 +635,10 @@ function renderWelcomeDashboard() {
     const growthDashboard = getDomainData(bundle.growthDashboard);
     const overview = growthDashboard.overview || {};
     const hasIncompleteSession = application.hasIncompleteSession();
+    const participant = application.getCurrentParticipant();
+    const welcomeGreeting = participant
+        ? `<div class="welcome-personal-greeting"><p>خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p></div>`
+        : "";
 
     const assessmentActions = hasIncompleteSession
         ? `
@@ -433,6 +648,7 @@ function renderWelcomeDashboard() {
         : renderQuickActionButton("startButton", UI_ICONS.START, UI_LABELS.START_ASSESSMENT, "primary-btn ui-assessment-btn");
 
     container.innerHTML = `
+        ${welcomeGreeting}
         <div class="dashboard-grid dashboard-grid--launcher dashboard-grid--responsive">
             ${renderUICard({
                 type: "action",
@@ -1328,8 +1544,9 @@ function showWelcomeScreen() {
     });
 
     renderWelcomeDashboard();
+    renderParticipantSection();
 
-    const focusTarget = document.querySelector("#welcomeDashboard button[data-action]");
+    const focusTarget = document.querySelector("#welcomeDashboard button[data-action], #participantStartBtn");
 
     if (focusTarget) {
         focusTarget.focus();
@@ -1428,11 +1645,13 @@ function restorePersistedState() {
     const result = application.restorePersistedState();
 
     if (result.type === "restore-report") {
+        renderParticipantSection();
         renderWelcomeDashboard();
         renderDashboard(result.report);
         return;
     }
 
+    renderParticipantSection();
     renderWelcomeDashboard();
 
 }
@@ -1440,6 +1659,10 @@ function restorePersistedState() {
 function continueQuestionnaire() {
 
     if (!application.questionnaireReady || !application.questionnaire.length) {
+        return;
+    }
+
+    if (!ensureParticipantIdentity()) {
         return;
     }
 
@@ -1455,9 +1678,13 @@ function restartQuestionnaireFromWelcome() {
 
 }
 
-function startQuestionnaire() {
+function startQuestionnaire(options = {}) {
 
     if (!application.questionnaireReady || !application.questionnaire.length) {
+        return;
+    }
+
+    if (!options.skipParticipantCheck && !ensureParticipantIdentity()) {
         return;
     }
 
@@ -1708,6 +1935,7 @@ function submitQuestionnaire() {
 
     const report = application.completeAssessment();
     renderWelcomeDashboard();
+    renderParticipantSection();
     refreshStorageStatusBanner();
     renderDashboard(report);
     return report;
@@ -1763,6 +1991,18 @@ function renderDashboard(report, options = {}) {
     const strongestSection = insights.strongestSection || { title: "—", percentage: 0 };
     const growthSection = insights.growthSection || { title: "—", percentage: 0 };
     const overallLevelLabel = getPerformanceLevelLabel(overall.level);
+    const reportParticipant = report.participant || application.getCurrentParticipant();
+    const participantMarkup = reportParticipant
+        ? `
+                    <div>
+                        <strong>شرکت کنندہ</strong>
+                        <span>${escapeHtml(reportParticipant.name)}</span>
+                    </div>
+                    <div>
+                        <strong>موبائل</strong>
+                        <span dir="ltr">${escapeHtml(reportParticipant.mobile)}</span>
+                    </div>`
+        : "";
 
     const sectionMarkup = reportSections.map(section => {
         const sectionClass = section.percentage >= 75 ? "strong-section" : section.percentage < 60 ? "weak-section" : "";
@@ -1805,6 +2045,7 @@ function renderDashboard(report, options = {}) {
                 <h2>محاسبۂ نفس</h2>
                 <h3>بر اساس معیارِ مطلوب</h3>
                 <div class="report-metrics">
+                    ${participantMarkup}
                     <div>
                         <strong>تاریخِ جائزہ</strong>
                         <span>${assessmentDate}</span>

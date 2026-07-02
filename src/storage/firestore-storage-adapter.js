@@ -73,6 +73,14 @@ export function createFirestoreStorageAdapter() {
 
         saveJournalStore() {
             throw createNotEnabledError("saveJournalStore");
+        },
+
+        loadParticipantsStore() {
+            throw createNotEnabledError("loadParticipantsStore");
+        },
+
+        saveParticipantsStore() {
+            throw createNotEnabledError("saveParticipantsStore");
         }
     };
 

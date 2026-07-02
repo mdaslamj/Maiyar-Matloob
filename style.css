@@ -2366,3 +2366,87 @@ progress::-webkit-progress-value {
         padding: 8px 10px;
     }
 }
+
+/* ===============================
+   Participant Identity
+================================ */
+
+.participant-section {
+    display: grid;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.participant-card {
+    max-width: 760px;
+    margin-inline: auto;
+}
+
+.participant-card--identified .participant-greeting {
+    font-size: clamp(22px, 3vw, 28px);
+}
+
+.participant-form {
+    display: grid;
+    gap: var(--space-sm);
+}
+
+.participant-field {
+    display: grid;
+    gap: 6px;
+}
+
+.participant-field__label {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.participant-field input {
+    width: 100%;
+    min-height: var(--touch-target);
+    padding: 10px 12px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    font: inherit;
+    color: var(--text);
+}
+
+.participant-field input:focus-visible {
+    outline: 3px solid rgba(37, 99, 235, 0.2);
+    border-color: #2563eb;
+}
+
+.participant-field__error {
+    color: #991b1b;
+    background: #fff7f7;
+    border: 1px solid #fecaca;
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.participant-field__error[hidden] {
+    display: none;
+}
+
+.welcome-personal-greeting {
+    max-width: 760px;
+    margin: 0 auto var(--space-sm);
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--primary-soft);
+    border: 1px solid #bfdbfe;
+}
+
+.welcome-personal-greeting p {
+    margin: 0;
+    color: var(--primary-dark);
+    font-size: clamp(18px, 2.4vw, 22px);
+}
+
+.welcome-personal-greeting strong {
+    font-weight: 700;
+}
