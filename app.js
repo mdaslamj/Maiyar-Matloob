@@ -441,7 +441,6 @@ function renderParticipantNewColumn(participant, isActive) {
 
     return `
         <div class="welcome-panel__column welcome-panel__column--new ${isActive ? "is-active" : "is-dimmed"}">
-            <span class="welcome-panel__kicker">نیا شرکت کنندہ</span>
             <form id="participantForm" class="welcome-panel__form" novalidate>
                 <label class="welcome-panel__field" for="participantName">
                     <span class="welcome-panel__label">پورا نام</span>
@@ -486,18 +485,10 @@ function renderParticipantNewColumn(participant, isActive) {
 
 }
 
-function renderParticipantReturningColumn(participant, isActive) {
-
-    if (!isActive || !participant) {
-        return `
-            <div class="welcome-panel__column welcome-panel__column--returning is-placeholder">
-                <span class="welcome-panel__kicker welcome-panel__kicker--gold">واپس آنے والا شرکت کنندہ</span>
-            </div>`;
-    }
+function renderParticipantReturningColumn(participant) {
 
     return `
         <div class="welcome-panel__column welcome-panel__column--returning is-active">
-            <span class="welcome-panel__kicker welcome-panel__kicker--gold">واپس آنے والا شرکت کنندہ</span>
             <p class="welcome-panel__greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
             <div class="welcome-panel__actions">
                 ${renderParticipantAssessmentActions()}
@@ -523,14 +514,20 @@ function renderParticipantSection() {
     }
 
     const showReturning = Boolean(participant && !showParticipantForm);
-    const showNewForm = !showReturning;
 
-    section.innerHTML = `
-        <article class="welcome-panel">
-            ${renderParticipantNewColumn(participant, showNewForm)}
-            <div class="welcome-panel__divider" role="separator" aria-hidden="true"></div>
-            ${renderParticipantReturningColumn(participant, showReturning)}
-        </article>`;
+    if (showReturning) {
+        section.innerHTML = `
+            <article class="welcome-panel welcome-panel--dual">
+                ${renderParticipantNewColumn(participant, false)}
+                <div class="welcome-panel__divider" role="separator" aria-hidden="true"></div>
+                ${renderParticipantReturningColumn(participant)}
+            </article>`;
+    } else {
+        section.innerHTML = `
+            <article class="welcome-panel welcome-panel--single">
+                ${renderParticipantNewColumn(participant, true)}
+            </article>`;
+    }
 
     document.getElementById("participantForm")?.addEventListener("submit", handleParticipantFormSubmit);
 
