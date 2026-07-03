@@ -11,6 +11,7 @@ import { FEATURE_FLAGS } from "../shared/feature-flags.js";
 
 export const ADMIN_GATE_MODES = Object.freeze({
     DEVELOPMENT: "development",
+    STORAGE_VERIFICATION: "storage-verification",
     FIREBASE_REQUIRED: "firebase-required",
     FIREBASE_AUTH: "firebase-auth",
     AUTH_NOT_CONFIGURED: "auth-not-configured"
@@ -30,6 +31,10 @@ export function resolveAdminGateMode() {
             : ADMIN_GATE_MODES.FIREBASE_REQUIRED;
     }
 
+    if (provider === "supabase" && isBackendInfrastructureReady()) {
+        return ADMIN_GATE_MODES.STORAGE_VERIFICATION;
+    }
+
     return ADMIN_GATE_MODES.AUTH_NOT_CONFIGURED;
 
 }
@@ -44,12 +49,35 @@ export function createDevelopmentAdminSession() {
 
 }
 
+export function createStorageVerificationAdminSession() {
+
+    return {
+        authorized: true,
+        user: null,
+        storageVerificationMode: true
+    };
+
+}
+
+export function renderAdminStorageVerificationBanner() {
+
+    return `
+        <div class="admin-dev-banner" role="status">
+            Storage Verification Mode — Authentication Disabled
+        </div>`;
+
+}
+
 export function getAdminNavigationStatusNote(options = {}) {
 
-    const { developmentMode = false } = options;
+    const { developmentMode = false, storageVerificationMode = false, liveDataEnabled = false } = options;
 
     if (developmentMode) {
         return "Development mode";
+    }
+
+    if (storageVerificationMode) {
+        return liveDataEnabled ? "Live data" : "Storage verification";
     }
 
     if (resolveAdminGateMode() === ADMIN_GATE_MODES.FIREBASE_AUTH) {
@@ -180,10 +208,12 @@ export const AdminAuthGate = {
     ADMIN_GATE_MODES,
     resolveAdminGateMode,
     createDevelopmentAdminSession,
+    createStorageVerificationAdminSession,
     getAdminNavigationStatusNote,
     renderAdminFirebaseRequired,
     renderAdminAuthNotConfigured,
     renderAdminDevelopmentModeBanner,
+    renderAdminStorageVerificationBanner,
     renderAdminAuthGate,
     renderAdminAccessDenied,
     initializeAdminFirebase,

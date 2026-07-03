@@ -266,7 +266,9 @@ export function renderAdminDashboardPage(data) {
                 <p class="ui-card__text">
                     This dashboard monitors community implementation of Maiyar-e-Matloob teachings.
                     It focuses on participation and implementation — not CRM, user management, or website analytics.
-                    All figures shown are anonymous aggregated sample data.
+                    ${data.useLiveTotalParticipants
+        ? "Live widget values are loaded from the configured backend provider."
+        : "All figures shown are anonymous aggregated sample data."}
                 </p>
             </div>
         </section>`;

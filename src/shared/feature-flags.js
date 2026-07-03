@@ -14,13 +14,13 @@ export const FEATURE_FLAGS = {
     /**
      * Enable backend sync and admin live data.
      */
-    USE_BACKEND_SYNC: false,
+    USE_BACKEND_SYNC: true,
 
     /**
      * Active backend provider when USE_BACKEND_SYNC is true.
      * Values: "none" | "supabase" | "firebase" | "rest" | "self-hosted"
      */
-    BACKEND_PROVIDER: "none",
+    BACKEND_PROVIDER: "supabase",
 
     /**
      * Deployment environment label.

@@ -1,3 +1,4 @@
 node_modules/
 screenshots/
 src/firebase/firebase-config.local.js
+src/backend/config/backend-config.local.js

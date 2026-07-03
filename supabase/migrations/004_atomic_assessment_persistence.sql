@@ -2,8 +2,8 @@
 -- Eliminates orphan report rows when assessment insert fails.
 
 CREATE OR REPLACE FUNCTION persist_assessment_submission(
-    p_report JSONB NOT NULL,
-    p_assessment JSONB NOT NULL
+    p_report JSONB,
+    p_assessment JSONB
 )
 RETURNS JSONB
 LANGUAGE plpgsql

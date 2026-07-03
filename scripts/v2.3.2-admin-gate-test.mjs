@@ -91,7 +91,7 @@ function testSupabaseAndFutureProviders() {
     }, () => {
         assert(
             resolveAdminGateMode() === ADMIN_GATE_MODES.AUTH_NOT_CONFIGURED,
-            "supabase resolves to auth-not-configured"
+            "supabase without storage config resolves to auth-not-configured"
         );
     });
 

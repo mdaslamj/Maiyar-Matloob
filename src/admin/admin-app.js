@@ -10,6 +10,7 @@ import {
     attemptAdminGoogleSignIn,
     bindAdminAuthGate,
     createDevelopmentAdminSession,
+    createStorageVerificationAdminSession,
     getAuthorizedAdminSession,
     initializeAdminFirebase,
     observeAdminAuthState,
@@ -102,7 +103,9 @@ function renderActivePage() {
         pageDescription: PAGE_DESCRIPTIONS[activeRoute],
         contentHtml: pageHtml,
         adminEmail: adminSession.user?.email || "",
-        developmentMode: Boolean(adminSession.developmentMode)
+        developmentMode: Boolean(adminSession.developmentMode),
+        storageVerificationMode: Boolean(adminSession.storageVerificationMode),
+        liveDataEnabled: Boolean(adminData?.useLiveTotalParticipants)
     });
 
     contentRoot = shellRoot.querySelector("#adminPageContent");
@@ -241,9 +244,9 @@ function handlePopState() {
 
 }
 
-async function bootstrapDevelopmentAdmin() {
+async function bootstrapStorageVerificationAdmin() {
 
-    adminSession = createDevelopmentAdminSession();
+    adminSession = createStorageVerificationAdminSession();
 
     if (!adminData) {
         adminData = await loadAdminDataBundle();
@@ -256,6 +259,9 @@ async function bootstrapDevelopmentAdmin() {
     }
 
     renderActivePage();
+    refreshDashboardLiveWidgets().catch(error => {
+        console.warn("Admin live widget refresh failed.", error);
+    });
 
     if (!popStateBound) {
         window.addEventListener("popstate", handlePopState);
@@ -289,7 +295,30 @@ export async function initializeAdminApp() {
     }
 
     if (gateMode === ADMIN_GATE_MODES.DEVELOPMENT) {
-        await bootstrapDevelopmentAdmin();
+        adminSession = createDevelopmentAdminSession();
+
+        if (!adminData) {
+            adminData = await loadAdminDataBundle();
+        }
+
+        activeRoute = getRouteFromLocation();
+
+        if (!window.location.hash) {
+            window.history.replaceState({ adminRoute: activeRoute }, "", `#/${activeRoute}`);
+        }
+
+        renderActivePage();
+
+        if (!popStateBound) {
+            window.addEventListener("popstate", handlePopState);
+            popStateBound = true;
+        }
+
+        return;
+    }
+
+    if (gateMode === ADMIN_GATE_MODES.STORAGE_VERIFICATION) {
+        await bootstrapStorageVerificationAdmin();
         return;
     }
 

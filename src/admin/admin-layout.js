@@ -1,6 +1,10 @@
 import { getRouteMeta, renderAdminMobileNavigation, renderAdminNavigation } from "./admin-navigation.js";
 import { escapeHtml } from "./admin-components.js";
-import { getAdminNavigationStatusNote, renderAdminDevelopmentModeBanner } from "./admin-auth-gate.js";
+import {
+    getAdminNavigationStatusNote,
+    renderAdminDevelopmentModeBanner,
+    renderAdminStorageVerificationBanner
+} from "./admin-auth-gate.js";
 
 export function renderAdminLayout(options = {}) {
 
@@ -10,20 +14,30 @@ export function renderAdminLayout(options = {}) {
         pageDescription = "",
         contentHtml = "",
         adminEmail = "",
-        developmentMode = false
+        developmentMode = false,
+        storageVerificationMode = false,
+        liveDataEnabled = false
     } = options;
     const routeMeta = getRouteMeta(activeRoute);
     const title = pageTitle || routeMeta.label;
-    const statusNote = getAdminNavigationStatusNote({ developmentMode });
+    const statusNote = getAdminNavigationStatusNote({
+        developmentMode,
+        storageVerificationMode,
+        liveDataEnabled
+    });
+    const dataBadge = liveDataEnabled ? "Live Data" : "Sample Data";
+    const topBanner = developmentMode
+        ? renderAdminDevelopmentModeBanner()
+        : (storageVerificationMode ? renderAdminStorageVerificationBanner() : "");
 
     return `
         <div class="admin-shell">
             <aside class="admin-sidebar" aria-label="Admin sidebar">
-                ${renderAdminNavigation(activeRoute, { statusNote })}
+                ${renderAdminNavigation(activeRoute, { statusNote, liveDataEnabled })}
             </aside>
 
             <div class="admin-main">
-                ${developmentMode ? renderAdminDevelopmentModeBanner() : ""}
+                ${topBanner}
                 <header class="admin-topbar">
                     <div class="admin-topbar__titles">
                         <span class="admin-topbar__kicker">Admin Module</span>
@@ -31,7 +45,7 @@ export function renderAdminLayout(options = {}) {
                         ${pageDescription ? `<p class="admin-topbar__description">${escapeHtml(pageDescription)}</p>` : ""}
                     </div>
                     <div class="admin-topbar__meta">
-                        <span class="admin-topbar__badge">Sample Data</span>
+                        <span class="admin-topbar__badge">${escapeHtml(dataBadge)}</span>
                         ${adminEmail ? `<span class="admin-topbar__account">${escapeHtml(adminEmail)}</span>` : ""}
                         <span class="admin-topbar__version">v2.1.0</span>
                     </div>
