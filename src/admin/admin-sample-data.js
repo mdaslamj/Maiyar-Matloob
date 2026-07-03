@@ -236,7 +236,7 @@ function buildSettings() {
             status: "not-connected",
             authentication: "pending",
             firestore: "pending",
-            note: "Firebase integration will be enabled in a future release."
+            note: "Backend integration will be enabled in a future release."
         },
         exports: {
             csv: "planned",

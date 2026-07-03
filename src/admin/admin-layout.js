@@ -1,5 +1,6 @@
 import { getRouteMeta, renderAdminMobileNavigation, renderAdminNavigation } from "./admin-navigation.js";
 import { escapeHtml } from "./admin-components.js";
+import { getAdminNavigationStatusNote, renderAdminDevelopmentModeBanner } from "./admin-auth-gate.js";
 
 export function renderAdminLayout(options = {}) {
 
@@ -8,18 +9,21 @@ export function renderAdminLayout(options = {}) {
         pageTitle,
         pageDescription = "",
         contentHtml = "",
-        adminEmail = ""
+        adminEmail = "",
+        developmentMode = false
     } = options;
     const routeMeta = getRouteMeta(activeRoute);
     const title = pageTitle || routeMeta.label;
+    const statusNote = getAdminNavigationStatusNote({ developmentMode });
 
     return `
         <div class="admin-shell">
             <aside class="admin-sidebar" aria-label="Admin sidebar">
-                ${renderAdminNavigation(activeRoute)}
+                ${renderAdminNavigation(activeRoute, { statusNote })}
             </aside>
 
             <div class="admin-main">
+                ${developmentMode ? renderAdminDevelopmentModeBanner() : ""}
                 <header class="admin-topbar">
                     <div class="admin-topbar__titles">
                         <span class="admin-topbar__kicker">Admin Module</span>

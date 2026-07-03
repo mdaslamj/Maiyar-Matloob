@@ -7,7 +7,7 @@ export function renderAdminSettingsPage(data) {
     return `
         ${renderPageIntro(
             "Settings",
-            "Read-only configuration preview for the future Admin module. Firebase integration is not active yet."
+            "Read-only configuration preview for the Admin module."
         )}
 
         <div class="admin-settings-grid">
@@ -18,10 +18,10 @@ export function renderAdminSettingsPage(data) {
                 { label: "Environment", value: settings.application?.environment || "—" }
             ])}
 
-            ${renderSettingsGroup("Firebase", [
+            ${renderSettingsGroup("Backend", [
                 { label: "Status", value: settings.firebase?.status || "—" },
                 { label: "Authentication", value: settings.firebase?.authentication || "—" },
-                { label: "Firestore", value: settings.firebase?.firestore || "—" },
+                { label: "Storage", value: settings.firebase?.firestore || "—" },
                 { label: "Note", value: settings.firebase?.note || "—" }
             ])}
 

@@ -40,7 +40,9 @@ export function getRouteMeta(route) {
 
 }
 
-export function renderAdminNavigation(activeRoute) {
+export function renderAdminNavigation(activeRoute, options = {}) {
+
+    const statusNote = options.statusNote || "Authentication not configured";
 
     return `
         <nav class="admin-nav" aria-label="Implementation monitoring navigation">
@@ -69,7 +71,7 @@ export function renderAdminNavigation(activeRoute) {
             </ul>
             <div class="admin-nav__footer">
                 <p class="admin-nav__note">Sample data mode</p>
-                <p class="admin-nav__note">Firebase auth pending</p>
+                <p class="admin-nav__note">${statusNote}</p>
             </div>
         </nav>`;
 

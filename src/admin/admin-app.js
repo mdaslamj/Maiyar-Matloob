@@ -9,13 +9,16 @@ import { renderAdminSettingsPage } from "./admin-settings.js";
 import {
     attemptAdminGoogleSignIn,
     bindAdminAuthGate,
+    createDevelopmentAdminSession,
     getAuthorizedAdminSession,
     initializeAdminFirebase,
-    isAdminFirebaseReady,
     observeAdminAuthState,
     renderAdminAccessDenied,
     renderAdminAuthGate,
-    renderAdminFirebaseRequired
+    renderAdminAuthNotConfigured,
+    renderAdminFirebaseRequired,
+    resolveAdminGateMode,
+    ADMIN_GATE_MODES
 } from "./admin-auth-gate.js";
 import {
     createLoadingAverageImplementationWidget,
@@ -98,7 +101,8 @@ function renderActivePage() {
         pageTitle: routeMeta.label,
         pageDescription: PAGE_DESCRIPTIONS[activeRoute],
         contentHtml: pageHtml,
-        adminEmail: adminSession.user?.email || ""
+        adminEmail: adminSession.user?.email || "",
+        developmentMode: Boolean(adminSession.developmentMode)
     });
 
     contentRoot = shellRoot.querySelector("#adminPageContent");
@@ -237,6 +241,29 @@ function handlePopState() {
 
 }
 
+async function bootstrapDevelopmentAdmin() {
+
+    adminSession = createDevelopmentAdminSession();
+
+    if (!adminData) {
+        adminData = await loadAdminDataBundle();
+    }
+
+    activeRoute = getRouteFromLocation();
+
+    if (!window.location.hash) {
+        window.history.replaceState({ adminRoute: activeRoute }, "", `#/${activeRoute}`);
+    }
+
+    renderActivePage();
+
+    if (!popStateBound) {
+        window.addEventListener("popstate", handlePopState);
+        popStateBound = true;
+    }
+
+}
+
 export async function initializeAdminApp() {
 
     shellRoot = document.getElementById("adminRoot");
@@ -249,8 +276,20 @@ export async function initializeAdminApp() {
 
     await initializeAdminFirebase();
 
-    if (!isAdminFirebaseReady()) {
+    const gateMode = resolveAdminGateMode();
+
+    if (gateMode === ADMIN_GATE_MODES.FIREBASE_REQUIRED) {
         renderUnauthorizedState(renderAdminFirebaseRequired());
+        return;
+    }
+
+    if (gateMode === ADMIN_GATE_MODES.AUTH_NOT_CONFIGURED) {
+        renderUnauthorizedState(renderAdminAuthNotConfigured());
+        return;
+    }
+
+    if (gateMode === ADMIN_GATE_MODES.DEVELOPMENT) {
+        await bootstrapDevelopmentAdmin();
         return;
     }
 

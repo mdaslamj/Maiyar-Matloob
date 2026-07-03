@@ -632,6 +632,22 @@ body.admin-app {
     justify-self: start;
 }
 
+.admin-auth-gate__dev-note {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.admin-dev-banner {
+    margin: 0;
+    padding: 10px 16px;
+    background: #fff7ed;
+    border-bottom: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 14px;
+    text-align: center;
+}
+
 .admin-topbar__account {
     font-size: 13px;
     color: var(--text-muted);
