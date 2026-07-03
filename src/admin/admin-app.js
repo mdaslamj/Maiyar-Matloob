@@ -6,8 +6,19 @@ import { renderAdminInsightsPage } from "./admin-insights.js";
 import { renderAdminTrendsPage } from "./admin-trends.js";
 import { renderAdminUsersPage } from "./admin-users.js";
 import { renderAdminSettingsPage } from "./admin-settings.js";
+import {
+    attemptAdminGoogleSignIn,
+    bindAdminAuthGate,
+    getAuthorizedAdminSession,
+    initializeAdminFirebase,
+    isAdminFirebaseReady,
+    observeAdminAuthState,
+    renderAdminAccessDenied,
+    renderAdminAuthGate,
+    renderAdminFirebaseRequired
+} from "./admin-auth-gate.js";
 
-export const ADMIN_MODULE_VERSION = "2.2.1";
+export const ADMIN_MODULE_VERSION = "2.0.0";
 
 const PAGE_RENDERERS = {
     [ADMIN_ROUTES.dashboard]: renderAdminDashboardPage,
@@ -29,6 +40,9 @@ let adminData = null;
 let activeRoute = ADMIN_ROUTES.dashboard;
 let contentRoot = null;
 let shellRoot = null;
+let adminSession = null;
+let authUnsubscribe = null;
+let popStateBound = false;
 
 function getRouteFromLocation() {
 
@@ -63,7 +77,7 @@ function setRoute(route, options = {}) {
 
 function renderActivePage() {
 
-    if (!shellRoot || !adminData) {
+    if (!shellRoot || !adminData || !adminSession?.authorized) {
         return;
     }
 
@@ -75,7 +89,8 @@ function renderActivePage() {
         activeRoute,
         pageTitle: routeMeta.label,
         pageDescription: PAGE_DESCRIPTIONS[activeRoute],
-        contentHtml: pageHtml
+        contentHtml: pageHtml,
+        adminEmail: adminSession.user?.email || ""
     });
 
     contentRoot = shellRoot.querySelector("#adminPageContent");
@@ -92,7 +107,69 @@ function renderActivePage() {
 
 }
 
+function renderUnauthorizedState(markup) {
+
+    if (!shellRoot) {
+        return;
+    }
+
+    shellRoot.innerHTML = markup;
+    bindAdminAuthGate(shellRoot, {
+        onSignIn: handleAdminSignIn
+    });
+
+}
+
+async function handleAdminSignIn() {
+
+    const result = await attemptAdminGoogleSignIn();
+
+    if (!result.success) {
+        if (result.reason === "admin-not-authorized") {
+            renderUnauthorizedState(renderAdminAccessDenied(result.email));
+            return;
+        }
+
+        renderUnauthorizedState(renderAdminAuthGate({
+            errorMessage: result.error || "Google sign-in failed. Please try again."
+        }));
+    }
+
+}
+
+async function bootstrapAuthorizedAdmin() {
+
+    adminSession = await getAuthorizedAdminSession();
+
+    if (!adminSession.authorized) {
+        renderUnauthorizedState(renderAdminAuthGate());
+        return;
+    }
+
+    if (!adminData) {
+        adminData = await loadAdminSampleData();
+    }
+
+    activeRoute = getRouteFromLocation();
+
+    if (!window.location.hash) {
+        window.history.replaceState({ adminRoute: activeRoute }, "", `#/${activeRoute}`);
+    }
+
+    renderActivePage();
+
+    if (!popStateBound) {
+        window.addEventListener("popstate", handlePopState);
+        popStateBound = true;
+    }
+
+}
+
 function handlePopState() {
+
+    if (!adminSession?.authorized) {
+        return;
+    }
 
     activeRoute = getRouteFromLocation();
     renderActivePage();
@@ -109,15 +186,18 @@ export async function initializeAdminApp() {
 
     document.body.classList.add("admin-app");
 
-    adminData = await loadAdminSampleData();
-    activeRoute = getRouteFromLocation();
+    await initializeAdminFirebase();
 
-    if (!window.location.hash) {
-        window.history.replaceState({ adminRoute: activeRoute }, "", `#/${activeRoute}`);
+    if (!isAdminFirebaseReady()) {
+        renderUnauthorizedState(renderAdminFirebaseRequired());
+        return;
     }
 
-    renderActivePage();
-    window.addEventListener("popstate", handlePopState);
+    authUnsubscribe = observeAdminAuthState(async () => {
+        await bootstrapAuthorizedAdmin();
+    });
+
+    await bootstrapAuthorizedAdmin();
 
 }
 

@@ -18,6 +18,12 @@ import {
     hasIncompleteSession
 } from "../storage/storage.js";
 import { initializeFirebaseInfrastructure } from "../firebase/firebase-service.js";
+import { ensureParticipantAnonymousAuth } from "../firebase/firebase-auth-service.js";
+import {
+    recordSystemClientVersion,
+    syncAssessmentSubmission,
+    syncParticipantProfile
+} from "../firebase/firestore-assessment-sync.js";
 import {
     saveSnapshot,
     listSnapshots,
@@ -246,7 +252,41 @@ class ApplicationService {
 
     async initializeInfrastructure() {
 
-        return initializeFirebaseInfrastructure();
+        const result = await initializeFirebaseInfrastructure();
+
+        if (result.initialized) {
+            await ensureParticipantAnonymousAuth();
+            await recordSystemClientVersion(APP_VERSION, this.contentVersion);
+        }
+
+        return result;
+
+    }
+
+    _syncParticipantProfileToFirestore(participant) {
+
+        if (!participant) {
+            return;
+        }
+
+        syncParticipantProfile(participant).catch(error => {
+            console.warn("Participant Firestore sync failed.", error);
+        });
+
+    }
+
+    _syncAssessmentToFirestore(report) {
+
+        syncAssessmentSubmission({
+            report,
+            participant: this.currentParticipant,
+            questionnaire: this.questionnaire,
+            appVersion: APP_VERSION,
+            contentVersion: this.contentVersion,
+            getQuestionSection: question => this.getQuestionSection(question)
+        }).catch(error => {
+            console.warn("Assessment Firestore sync failed.", error);
+        });
 
     }
 
@@ -319,6 +359,7 @@ class ApplicationService {
         }
 
         this.currentParticipant = result.participant;
+        this._syncParticipantProfileToFirestore(this.currentParticipant);
 
         return result;
 
@@ -471,6 +512,7 @@ class ApplicationService {
             contentVersion: this.contentVersion
         });
 
+        this._syncAssessmentToFirestore(report);
         this._invalidateGrowthCache();
 
         return report;

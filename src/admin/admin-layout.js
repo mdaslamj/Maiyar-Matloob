@@ -7,7 +7,8 @@ export function renderAdminLayout(options = {}) {
         activeRoute,
         pageTitle,
         pageDescription = "",
-        contentHtml = ""
+        contentHtml = "",
+        adminEmail = ""
     } = options;
     const routeMeta = getRouteMeta(activeRoute);
     const title = pageTitle || routeMeta.label;
@@ -27,7 +28,8 @@ export function renderAdminLayout(options = {}) {
                     </div>
                     <div class="admin-topbar__meta">
                         <span class="admin-topbar__badge">Sample Data</span>
-                        <span class="admin-topbar__version">v2.2.1</span>
+                        ${adminEmail ? `<span class="admin-topbar__account">${escapeHtml(adminEmail)}</span>` : ""}
+                        <span class="admin-topbar__version">v2.0.0</span>
                     </div>
                 </header>
 

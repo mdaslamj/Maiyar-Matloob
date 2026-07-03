@@ -11,11 +11,16 @@ export const FIREBASE_CONFIG = {
 
 export const FIREBASE_SDK_VERSION = "10.14.1";
 
+/**
+ * Legacy Sprint 2 names retained for reference.
+ * Version 2.0 uses FIRESTORE_PATHS in firestore-schema.js.
+ */
 export const FIRESTORE_COLLECTIONS = {
+    PARTICIPANTS: "participants",
     ASSESSMENTS: "assessments",
-    ANONYMOUS_USERS: "anonymousUsers",
-    EVENTS: "events",
-    APP_CONFIG: "appConfig"
+    COMMUNITY: "community",
+    ADMIN: "admin",
+    SYSTEM: "system"
 };
 
 export function isFirebaseConfigComplete(config = FIREBASE_CONFIG) {

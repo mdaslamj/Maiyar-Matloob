@@ -2,20 +2,35 @@ import {
     FIREBASE_CONFIG,
     FIREBASE_SDK_VERSION,
     getFirebaseRuntimeStatus,
-    isFirebaseConfigComplete,
-    isFirebaseEnabled
+    isFirebaseConfigComplete
 } from "./firebase-config.js";
 
 const FIREBASE_APP_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-app.js`;
 const FIRESTORE_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-firestore.js`;
+const AUTH_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-auth.js`;
 
+let resolvedConfig = { ...FIREBASE_CONFIG };
+let adminAllowedEmails = [];
 let firebaseApp = null;
 let firestoreDb = null;
+let firebaseAuth = null;
 let initializationPromise = null;
 let initializationResult = {
     initialized: false,
     reason: "disabled"
 };
+
+export function getResolvedFirebaseConfig() {
+
+    return { ...resolvedConfig };
+
+}
+
+export function getAdminAllowedEmails() {
+
+    return [...adminAllowedEmails];
+
+}
 
 export function getFirebaseInitializationResult() {
 
@@ -35,6 +50,44 @@ export function getFirestoreDb() {
 
 }
 
+export function getFirebaseAuth() {
+
+    return firebaseAuth;
+
+}
+
+export function isFirebaseReady() {
+
+    return Boolean(initializationResult.initialized && firebaseApp && firestoreDb && firebaseAuth);
+
+}
+
+async function loadLocalFirebaseConfig() {
+
+    try {
+        const localModule = await import("./firebase-config.local.js");
+
+        if (localModule.FIREBASE_CONFIG) {
+            resolvedConfig = {
+                ...FIREBASE_CONFIG,
+                ...localModule.FIREBASE_CONFIG
+            };
+        }
+
+        if (Array.isArray(localModule.ADMIN_ALLOWED_EMAILS)) {
+            adminAllowedEmails = localModule.ADMIN_ALLOWED_EMAILS.filter(Boolean);
+        }
+
+        return true;
+    }
+    catch (error) {
+        resolvedConfig = { ...FIREBASE_CONFIG };
+        adminAllowedEmails = [];
+        return false;
+    }
+
+}
+
 export async function initializeFirebaseInfrastructure() {
 
     if (initializationPromise) {
@@ -49,6 +102,8 @@ export async function initializeFirebaseInfrastructure() {
 
 async function initializeFirebaseInfrastructureInternal() {
 
+    await loadLocalFirebaseConfig();
+
     const runtimeStatus = getFirebaseRuntimeStatus();
 
     if (!runtimeStatus.firebaseEnabled) {
@@ -60,7 +115,7 @@ async function initializeFirebaseInfrastructureInternal() {
         return initializationResult;
     }
 
-    if (!runtimeStatus.configComplete) {
+    if (!isFirebaseConfigComplete(resolvedConfig)) {
         initializationResult = {
             initialized: false,
             reason: "config-incomplete"
@@ -72,26 +127,29 @@ async function initializeFirebaseInfrastructureInternal() {
     }
 
     try {
-        const [{ initializeApp }, { getFirestore }] = await Promise.all([
+        const [{ initializeApp }, { getFirestore }, { getAuth }] = await Promise.all([
             import(FIREBASE_APP_URL),
-            import(FIRESTORE_URL)
+            import(FIRESTORE_URL),
+            import(AUTH_URL)
         ]);
 
-        firebaseApp = initializeApp(FIREBASE_CONFIG);
+        firebaseApp = initializeApp(resolvedConfig);
         firestoreDb = getFirestore(firebaseApp);
+        firebaseAuth = getAuth(firebaseApp);
 
         initializationResult = {
             initialized: true,
             reason: "ready",
-            firestoreAttached: Boolean(firestoreDb)
+            firestoreAttached: Boolean(firestoreDb),
+            authAttached: Boolean(firebaseAuth)
         };
 
         return initializationResult;
     }
-
     catch (error) {
         firebaseApp = null;
         firestoreDb = null;
+        firebaseAuth = null;
 
         initializationResult = {
             initialized: false,
@@ -111,6 +169,9 @@ export const FirebaseService = {
     getFirebaseInitializationResult,
     getFirebaseApp,
     getFirestoreDb,
-    isFirebaseEnabled,
-    isFirebaseConfigComplete
+    getFirebaseAuth,
+    getResolvedFirebaseConfig,
+    getAdminAllowedEmails,
+    isFirebaseReady,
+    isFirebaseConfigComplete: () => isFirebaseConfigComplete(resolvedConfig)
 };
