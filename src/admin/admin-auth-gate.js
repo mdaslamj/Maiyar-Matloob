@@ -1,10 +1,11 @@
-import { initializeFirebaseInfrastructure, isFirebaseReady } from "../firebase/firebase-service.js";
 import {
-    requireAdminAuthState,
+    initializeBackendInfrastructure,
+    isBackendInfrastructureReady,
+    requireAdminSession,
     signInAdminWithGoogle,
-    signOutCurrentUser,
-    watchAuthState
-} from "../firebase/firebase-auth-service.js";
+    signOutAdminSession,
+    watchAdminSession
+} from "../backend/backend-service.js";
 
 export function renderAdminFirebaseRequired() {
 
@@ -55,7 +56,7 @@ export function renderAdminAccessDenied(email) {
 
 export async function initializeAdminFirebase() {
 
-    return initializeFirebaseInfrastructure();
+    return initializeBackendInfrastructure();
 
 }
 
@@ -74,25 +75,25 @@ export async function attemptAdminGoogleSignIn() {
 
 export async function getAuthorizedAdminSession() {
 
-    return requireAdminAuthState();
+    return requireAdminSession();
 
 }
 
 export function observeAdminAuthState(callback) {
 
-    return watchAuthState(callback);
+    return watchAdminSession(callback);
 
 }
 
 export async function signOutAdmin() {
 
-    return signOutCurrentUser();
+    return signOutAdminSession();
 
 }
 
 export function isAdminFirebaseReady() {
 
-    return isFirebaseReady();
+    return isBackendInfrastructureReady();
 
 }
 

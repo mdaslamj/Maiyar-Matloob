@@ -1,20 +1,16 @@
 /**
  * Load live Admin Dashboard widget data.
- * UI components must not access Firestore directly.
+ * UI components must not access backend providers directly.
  */
-import { isFirebaseEnabled } from "../shared/feature-flags.js";
 import {
+    isAdminLiveDataEnabled,
     loadAverageImplementationWidgetData,
     loadCompletedAssessmentsWidgetData,
     loadLatestAssessmentWidgetData,
     loadTotalParticipantsWidgetData
-} from "../firebase/admin-firestore-service.js";
+} from "../backend/backend-service.js";
 
-export function isAdminLiveDataEnabled() {
-
-    return isFirebaseEnabled();
-
-}
+export { isAdminLiveDataEnabled };
 
 function createLoadingWidget() {
 

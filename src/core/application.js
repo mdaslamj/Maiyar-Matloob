@@ -17,13 +17,13 @@ import {
     clearAll,
     hasIncompleteSession
 } from "../storage/storage.js";
-import { initializeFirebaseInfrastructure } from "../firebase/firebase-service.js";
-import { ensureParticipantAnonymousAuth } from "../firebase/firebase-auth-service.js";
 import {
-    recordSystemClientVersion,
-    syncAssessmentSubmission,
-    syncParticipantProfile
-} from "../firebase/firestore-assessment-sync.js";
+    initializeBackendInfrastructure,
+    ensureParticipantIdentity,
+    recordClientVersion,
+    saveParticipant,
+    saveAssessment
+} from "../backend/backend-service.js";
 import {
     saveSnapshot,
     listSnapshots,
@@ -252,11 +252,11 @@ class ApplicationService {
 
     async initializeInfrastructure() {
 
-        const result = await initializeFirebaseInfrastructure();
+        const result = await initializeBackendInfrastructure();
 
         if (result.initialized) {
-            await ensureParticipantAnonymousAuth();
-            await recordSystemClientVersion(APP_VERSION, this.contentVersion);
+            await ensureParticipantIdentity();
+            await recordClientVersion(APP_VERSION, this.contentVersion);
         }
 
         return result;
@@ -269,15 +269,15 @@ class ApplicationService {
             return;
         }
 
-        syncParticipantProfile(participant).catch(error => {
-            console.warn("Participant Firestore sync failed.", error);
+        saveParticipant(participant).catch(error => {
+            console.warn("Participant backend sync failed.", error);
         });
 
     }
 
     _syncAssessmentToFirestore(report) {
 
-        syncAssessmentSubmission({
+        saveAssessment({
             report,
             participant: this.currentParticipant,
             questionnaire: this.questionnaire,
@@ -285,7 +285,7 @@ class ApplicationService {
             contentVersion: this.contentVersion,
             getQuestionSection: question => this.getQuestionSection(question)
         }).catch(error => {
-            console.warn("Assessment Firestore sync failed.", error);
+            console.warn("Assessment backend sync failed.", error);
         });
 
     }
