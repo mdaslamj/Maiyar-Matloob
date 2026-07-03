@@ -23,3 +23,10 @@ export function isFirestoreEnabled() {
     return FEATURE_FLAGS.USE_FIRESTORE === true;
 
 }
+
+/** Firestore sync for assessments/community data (Version 2.0+). */
+export function isFirestoreSyncEnabled() {
+
+    return isFirebaseEnabled();
+
+}

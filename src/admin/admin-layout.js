@@ -29,7 +29,7 @@ export function renderAdminLayout(options = {}) {
                     <div class="admin-topbar__meta">
                         <span class="admin-topbar__badge">Sample Data</span>
                         ${adminEmail ? `<span class="admin-topbar__account">${escapeHtml(adminEmail)}</span>` : ""}
-                        <span class="admin-topbar__version">v2.0.0</span>
+                        <span class="admin-topbar__version">v2.1.0</span>
                     </div>
                 </header>
 

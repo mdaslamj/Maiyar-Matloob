@@ -15,14 +15,15 @@ service cloud.firestore {
     }
 
     match /participants/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read: if (isSignedIn() && request.auth.uid == userId) || isGoogleAdmin();
+      allow write: if isSignedIn() && request.auth.uid == userId;
     }
 
     match /assessments/{assessmentId} {
       allow create: if isSignedIn()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.schemaVersion is int;
-      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow read: if (isSignedIn() && resource.data.uid == request.auth.uid) || isGoogleAdmin();
       allow update, delete: if false;
     }
 

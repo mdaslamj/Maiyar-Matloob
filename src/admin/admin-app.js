@@ -17,8 +17,16 @@ import {
     renderAdminAuthGate,
     renderAdminFirebaseRequired
 } from "./admin-auth-gate.js";
+import {
+    createLoadingAverageImplementationWidget,
+    createLoadingCompletedAssessmentsWidget,
+    createLoadingLatestAssessmentWidget,
+    createLoadingTotalParticipantsWidget,
+    isAdminLiveDataEnabled,
+    loadDashboardLiveWidgets
+} from "./admin-dashboard-data.js";
 
-export const ADMIN_MODULE_VERSION = "2.0.0";
+export const ADMIN_MODULE_VERSION = "2.1.0";
 
 const PAGE_RENDERERS = {
     [ADMIN_ROUTES.dashboard]: renderAdminDashboardPage,
@@ -137,6 +145,56 @@ async function handleAdminSignIn() {
 
 }
 
+async function loadAdminDataBundle() {
+
+    const sampleData = await loadAdminSampleData();
+
+    if (!isAdminLiveDataEnabled()) {
+        return {
+            ...sampleData,
+            useLiveTotalParticipants: false,
+            useLiveCompletedAssessments: false,
+            useLiveLatestAssessment: false,
+            useLiveAverageImplementation: false,
+            liveWidgets: {}
+        };
+    }
+
+    return {
+        ...sampleData,
+        useLiveTotalParticipants: true,
+        useLiveCompletedAssessments: true,
+        useLiveLatestAssessment: true,
+        useLiveAverageImplementation: true,
+        liveWidgets: {
+            totalParticipants: createLoadingTotalParticipantsWidget(),
+            completedAssessments: createLoadingCompletedAssessmentsWidget(),
+            latestAssessment: createLoadingLatestAssessmentWidget(),
+            averageImplementation: createLoadingAverageImplementationWidget()
+        }
+    };
+
+}
+
+async function refreshDashboardLiveWidgets() {
+
+    if (!isAdminLiveDataEnabled() || !adminData) {
+        return;
+    }
+
+    const liveData = await loadDashboardLiveWidgets();
+
+    adminData = {
+        ...adminData,
+        ...liveData
+    };
+
+    if (activeRoute === ADMIN_ROUTES.dashboard) {
+        renderActivePage();
+    }
+
+}
+
 async function bootstrapAuthorizedAdmin() {
 
     adminSession = await getAuthorizedAdminSession();
@@ -147,7 +205,7 @@ async function bootstrapAuthorizedAdmin() {
     }
 
     if (!adminData) {
-        adminData = await loadAdminSampleData();
+        adminData = await loadAdminDataBundle();
     }
 
     activeRoute = getRouteFromLocation();
@@ -157,6 +215,9 @@ async function bootstrapAuthorizedAdmin() {
     }
 
     renderActivePage();
+    refreshDashboardLiveWidgets().catch(error => {
+        console.warn("Admin live widget refresh failed.", error);
+    });
 
     if (!popStateBound) {
         window.addEventListener("popstate", handlePopState);

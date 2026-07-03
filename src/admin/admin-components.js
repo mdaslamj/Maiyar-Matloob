@@ -47,6 +47,72 @@ export function formatDate(value) {
 
 }
 
+export function formatDateTime(value) {
+
+    if (!value) {
+        return "—";
+    }
+
+    return new Date(value).toLocaleString("en-GB", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+}
+
+export function formatTime(value) {
+
+    if (!value) {
+        return "—";
+    }
+
+    return new Date(value).toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+}
+
+export function formatRelativeDayLabel(value) {
+
+    if (!value) {
+        return "";
+    }
+
+    const date = new Date(value);
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfTarget = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const dayDiff = Math.round((startOfToday - startOfTarget) / 86400000);
+
+    if (dayDiff === 0) {
+        return "Today";
+    }
+
+    if (dayDiff === 1) {
+        return "Yesterday";
+    }
+
+    return "";
+
+}
+
+export function formatLatestAssessmentMeta(value) {
+
+    const relative = formatRelativeDayLabel(value);
+    const time = formatTime(value);
+
+    if (relative) {
+        return `${relative}, ${time}`;
+    }
+
+    return time;
+
+}
+
 export function renderPageIntro(title, description) {
 
     return `
