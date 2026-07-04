@@ -272,6 +272,12 @@ export async function loadCommunitySectionAggregates() {
 
 }
 
+export async function loadParticipantDirectory() {
+
+    return getStorageAdapter().loadParticipantDirectory();
+
+}
+
 export function buildTrendEngineInputFromAggregates(questionAggregates = []) {
 
     return questionAggregates.map(entry => ({
@@ -305,5 +311,6 @@ export const BackendService = {
     loadAdminDashboardMetrics,
     loadCommunityQuestionAggregates,
     loadCommunitySectionAggregates,
+    loadParticipantDirectory,
     buildTrendEngineInputFromAggregates
 };

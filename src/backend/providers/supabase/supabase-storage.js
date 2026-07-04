@@ -16,6 +16,7 @@ import {
 import {
     mapAssessmentFromRow,
     mapAssessmentScoreRow,
+    mapParticipantDirectoryEntry,
     mapParticipantFromRow,
     mapParticipantToRow,
     mapReportFromRow,
@@ -506,6 +507,97 @@ export function createSupabaseStorageAdapter() {
             catch (error) {
                 console.warn("Unable to load community section aggregates.", error);
                 return [];
+            }
+
+        },
+
+        async loadParticipantDirectory() {
+
+            if (!isSupabaseReady()) {
+                return {
+                    status: "unavailable",
+                    rows: [],
+                    lastUpdated: null,
+                    message: "Backend unavailable."
+                };
+            }
+
+            try {
+                const supabase = getSupabaseClient();
+                const loadedAt = new Date().toISOString();
+                const { data: participantRows, error: participantError } = await supabase
+                    .from("participants")
+                    .select("id, local_participant_id, assessment_count, last_assessment_at")
+                    .order("last_assessment_at", { ascending: false, nullsFirst: false });
+
+                if (participantError) {
+                    throw participantError;
+                }
+
+                const latestAssessmentsByParticipant = new Map();
+                let offset = 0;
+
+                while (true) {
+                    const { data: assessmentRows, error: assessmentError } = await supabase
+                        .from("assessments")
+                        .select("participant_id, overall_level, timestamp")
+                        .order("timestamp", { ascending: false })
+                        .range(offset, offset + ASSESSMENT_PAGE_SIZE - 1);
+
+                    if (assessmentError) {
+                        throw assessmentError;
+                    }
+
+                    if (!Array.isArray(assessmentRows) || !assessmentRows.length) {
+                        break;
+                    }
+
+                    assessmentRows.forEach(row => {
+                        if (!latestAssessmentsByParticipant.has(row.participant_id)) {
+                            latestAssessmentsByParticipant.set(row.participant_id, {
+                                overallLevel: row.overall_level,
+                                timestamp: row.timestamp
+                            });
+                        }
+                    });
+
+                    if (assessmentRows.length < ASSESSMENT_PAGE_SIZE) {
+                        break;
+                    }
+
+                    offset += assessmentRows.length;
+                }
+
+                const rows = (participantRows || []).map(row => mapParticipantDirectoryEntry(
+                    row,
+                    latestAssessmentsByParticipant.get(row.id)
+                ));
+
+                if (!rows.length) {
+                    return {
+                        status: "empty",
+                        rows: [],
+                        lastUpdated: loadedAt,
+                        message: "No participants yet."
+                    };
+                }
+
+                return {
+                    status: "success",
+                    rows,
+                    lastUpdated: loadedAt,
+                    message: ""
+                };
+            }
+            catch (error) {
+                console.warn("Unable to load participant directory.", error);
+
+                return {
+                    status: "error",
+                    rows: [],
+                    lastUpdated: null,
+                    message: "Unable to load participant directory."
+                };
             }
 
         }

@@ -29,6 +29,10 @@ import {
     isAdminLiveDataEnabled,
     loadDashboardLiveWidgets
 } from "./admin-dashboard-data.js";
+import {
+    createLoadingParticipantDirectory,
+    loadParticipantDirectoryData
+} from "./admin-users-data.js";
 
 export const ADMIN_MODULE_VERSION = "2.1.0";
 
@@ -84,6 +88,12 @@ function setRoute(route, options = {}) {
     }
 
     renderActivePage();
+
+    if (route === ADMIN_ROUTES.users) {
+        refreshParticipantDirectory().catch(error => {
+            console.warn("Admin participant directory refresh failed.", error);
+        });
+    }
 
 }
 
@@ -163,7 +173,14 @@ async function loadAdminDataBundle() {
             useLiveCompletedAssessments: false,
             useLiveLatestAssessment: false,
             useLiveAverageImplementation: false,
-            liveWidgets: {}
+            useLiveParticipantDirectory: false,
+            liveWidgets: {},
+            participantDirectory: {
+                status: "unavailable",
+                rows: [],
+                lastUpdated: null,
+                message: "Live participant directory requires backend sync."
+            }
         };
     }
 
@@ -173,13 +190,34 @@ async function loadAdminDataBundle() {
         useLiveCompletedAssessments: true,
         useLiveLatestAssessment: true,
         useLiveAverageImplementation: true,
+        useLiveParticipantDirectory: true,
         liveWidgets: {
             totalParticipants: createLoadingTotalParticipantsWidget(),
             completedAssessments: createLoadingCompletedAssessmentsWidget(),
             latestAssessment: createLoadingLatestAssessmentWidget(),
             averageImplementation: createLoadingAverageImplementationWidget()
-        }
+        },
+        participantDirectory: createLoadingParticipantDirectory()
     };
+
+}
+
+async function refreshParticipantDirectory() {
+
+    if (!isAdminLiveDataEnabled() || !adminData) {
+        return;
+    }
+
+    const participantDirectory = await loadParticipantDirectoryData();
+
+    adminData = {
+        ...adminData,
+        participantDirectory
+    };
+
+    if (activeRoute === ADMIN_ROUTES.users) {
+        renderActivePage();
+    }
 
 }
 
@@ -225,6 +263,9 @@ async function bootstrapAuthorizedAdmin() {
     refreshDashboardLiveWidgets().catch(error => {
         console.warn("Admin live widget refresh failed.", error);
     });
+    refreshParticipantDirectory().catch(error => {
+        console.warn("Admin participant directory refresh failed.", error);
+    });
 
     if (!popStateBound) {
         window.addEventListener("popstate", handlePopState);
@@ -241,6 +282,12 @@ function handlePopState() {
 
     activeRoute = getRouteFromLocation();
     renderActivePage();
+
+    if (activeRoute === ADMIN_ROUTES.users) {
+        refreshParticipantDirectory().catch(error => {
+            console.warn("Admin participant directory refresh failed.", error);
+        });
+    }
 
 }
 
@@ -261,6 +308,9 @@ async function bootstrapStorageVerificationAdmin() {
     renderActivePage();
     refreshDashboardLiveWidgets().catch(error => {
         console.warn("Admin live widget refresh failed.", error);
+    });
+    refreshParticipantDirectory().catch(error => {
+        console.warn("Admin participant directory refresh failed.", error);
     });
 
     if (!popStateBound) {

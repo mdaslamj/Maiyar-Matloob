@@ -15,6 +15,7 @@
  * @property {() => Promise<object>} loadLatestAssessment
  * @property {(options?: object) => Promise<object>} loadAssessmentScoreBatch
  * @property {() => Promise<object|null>} loadAdminDashboardMetrics
+ * @property {() => Promise<object>} loadParticipantDirectory
  * @property {() => Promise<object[]>} loadCommunityQuestionAggregates
  * @property {() => Promise<object[]>} loadCommunitySectionAggregates
  */
@@ -32,6 +33,7 @@ export const StorageAdapterContract = {
         "loadLatestAssessment",
         "loadAssessmentScoreBatch",
         "loadAdminDashboardMetrics",
+        "loadParticipantDirectory",
         "loadCommunityQuestionAggregates",
         "loadCommunitySectionAggregates"
     ]

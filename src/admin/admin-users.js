@@ -7,15 +7,15 @@ import {
     escapeHtml
 } from "./admin-components.js";
 
-export function renderAdminUsersPage(data) {
+function renderParticipantDirectoryTable(directory) {
 
-    const participants = data.users || [];
+    const participants = directory?.rows || [];
 
-    const table = renderDataTable(
+    return renderDataTable(
         [
             {
-                label: "Participant",
-                render: row => `<strong>${escapeHtml(row.name)}</strong>`
+                label: "Participant ID",
+                render: row => `<strong>${escapeHtml(row.displayId || "—")}</strong>`
             },
             {
                 label: "Assessments",
@@ -26,7 +26,7 @@ export function renderAdminUsersPage(data) {
                 render: row => escapeHtml(formatDate(row.lastAssessment))
             },
             {
-                label: "Current Level",
+                label: "Implementation Level",
                 render: row => escapeHtml(row.currentLevel || "—")
             },
             {
@@ -37,23 +37,66 @@ export function renderAdminUsersPage(data) {
         participants
     );
 
+}
+
+function renderParticipantDirectoryBody(data) {
+
+    const directory = data.participantDirectory || {
+        status: "unavailable",
+        rows: [],
+        message: "Participant directory unavailable."
+    };
+
+    if (!data.useLiveParticipantDirectory) {
+        return `
+            <p class="ui-empty">${escapeHtml(directory.message || "Participant directory unavailable.")}</p>`;
+    }
+
+    if (directory.status === "loading") {
+        return `<p class="ui-empty">${escapeHtml(directory.message || "Loading participant directory...")}</p>`;
+    }
+
+    if (directory.status === "unavailable" || directory.status === "error") {
+        return `<p class="ui-empty">${escapeHtml(directory.message || "Unable to load participant directory.")}</p>`;
+    }
+
+    if (directory.status === "empty") {
+        return `<p class="ui-empty">${escapeHtml(directory.message || "No participants yet.")}</p>`;
+    }
+
+    return renderParticipantDirectoryTable(directory);
+
+}
+
+export function renderAdminUsersPage(data) {
+
+    const directory = data.participantDirectory || {};
+    const participantCount = Array.isArray(directory.rows) ? directory.rows.length : 0;
+    const description = data.useLiveParticipantDirectory
+        ? "Anonymous participation activity from the configured backend storage provider."
+        : "Live participant directory requires backend sync.";
+
     return `
         ${renderPageIntro(
             "Participants",
-            "Community participation in Maiyar-e-Matloob. Sample records only — participant access will require future authentication."
+            description
         )}
 
         ${renderSectionCard(
             "Participant Directory",
-            table,
-            { description: "Participation activity overview. Individual assessment answers are never shown." }
+            renderParticipantDirectoryBody(data),
+            {
+                description: data.useLiveParticipantDirectory
+                    ? `${participantCount} anonymized participant record${participantCount === 1 ? "" : "s"}. Individual assessment answers and personal details are never shown.`
+                    : "Participation activity overview. Individual assessment answers are never shown."
+            }
         )}
 
         <section class="ui-card ui-card--compact admin-note-card">
             <div class="ui-card__body">
                 <p class="ui-card__text">
                     This directory supports implementation monitoring — not user management or CRM.
-                    It shows who is participating and how consistently assessments are being completed.
+                    It shows anonymized participation metadata and how consistently assessments are being completed.
                 </p>
             </div>
         </section>`;

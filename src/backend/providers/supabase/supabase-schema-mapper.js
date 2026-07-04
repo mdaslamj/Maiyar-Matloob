@@ -141,8 +141,71 @@ export function mapAssessmentScoreRow(row = {}) {
         uid: row.participant_id,
         implementationScore: row.implementation_score,
         overallPercentage: row.overall_percentage,
+        overallLevel: row.overall_level,
         timestamp: row.timestamp,
         id: row.id
+    };
+
+}
+
+export function anonymizeParticipantDisplayId(participantId) {
+
+    if (!participantId || typeof participantId !== "string") {
+        return "—";
+    }
+
+    if (participantId.length <= 12) {
+        return participantId;
+    }
+
+    return `Participant ${participantId.slice(-8)}`;
+
+}
+
+export function deriveParticipationStatus({ assessmentCount = 0, lastAssessmentAt = null } = {}) {
+
+    const count = Number(assessmentCount || 0);
+
+    if (count <= 0 || !lastAssessmentAt) {
+        return "pending";
+    }
+
+    const daysSince = (Date.now() - new Date(lastAssessmentAt).getTime()) / 86400000;
+
+    return daysSince <= 90 ? "active" : "inactive";
+
+}
+
+export function mapParticipantDirectoryEntry(participantRow = {}, latestAssessment = null) {
+
+    const participantId = participantRow.id
+        || participantRow.participantId
+        || participantRow.local_participant_id
+        || participantRow.localParticipantId
+        || null;
+    const assessments = Number(
+        participantRow.assessment_count
+        ?? participantRow.assessmentCount
+        ?? 0
+    );
+    const lastAssessment = participantRow.last_assessment_at
+        || participantRow.lastAssessmentAt
+        || latestAssessment?.timestamp
+        || null;
+    const currentLevel = latestAssessment?.overallLevel
+        || latestAssessment?.overall_level
+        || null;
+
+    return {
+        participantId,
+        displayId: anonymizeParticipantDisplayId(participantId),
+        assessments,
+        lastAssessment,
+        currentLevel: currentLevel || "—",
+        status: deriveParticipationStatus({
+            assessmentCount: assessments,
+            lastAssessmentAt: lastAssessment
+        })
     };
 
 }
@@ -155,5 +218,8 @@ export const SupabaseSchemaMapper = {
     mapReportFromRow,
     mapAssessmentToRow,
     mapAssessmentFromRow,
-    mapAssessmentScoreRow
+    mapAssessmentScoreRow,
+    anonymizeParticipantDisplayId,
+    deriveParticipationStatus,
+    mapParticipantDirectoryEntry
 };

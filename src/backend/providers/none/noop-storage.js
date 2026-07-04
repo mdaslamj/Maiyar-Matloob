@@ -57,6 +57,15 @@ export function createNoOpStorageAdapter() {
 
         async loadCommunitySectionAggregates() {
             return [];
+        },
+
+        async loadParticipantDirectory() {
+            return {
+                status: "unavailable",
+                rows: [],
+                lastUpdated: null,
+                message: "Backend unavailable."
+            };
         }
     };
 

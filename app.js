@@ -5,6 +5,7 @@
 // =======================================
 
 import { application } from "./src/core/application.js";
+import { exportReportToPdf } from "./src/export/report-pdf-export.js";
 import {
     getLastStorageIssue,
     clearLastStorageIssue,
@@ -36,6 +37,10 @@ const UI_LABELS = {
     OPEN_PERSONAL_HOME: "ذاتی صفحہ",
     BACK: "← واپس",
     PRINT_REPORT: "رپورٹ پرنٹ کریں",
+    DOWNLOAD_PDF: "پی ڈی ایف ڈاؤن لوڈ کریں",
+    DOWNLOAD_PDF_PREPARING: "پی ڈی ایف تیار ہو رہی ہے...",
+    DOWNLOAD_PDF_FAILED: "پی ڈی ایف بنانے میں ناکامی۔ براہِ کرم دوبارہ کوشش کریں۔",
+    DOWNLOAD_PDF_SUCCESS: "پی ڈی ایف ڈاؤن لوڈ ہو گئی۔",
     EMPTY_PROGRESS: "ابھی کوئی مکمل جائزہ محفوظ نہیں ہے۔",
     EMPTY_HISTORY: "ابھی کوئی جائزہ محفوظ نہیں ہے۔",
     EMPTY_INSIGHTS: "بصیرت کے لیے مزید مکمل جائزے درکار ہیں۔"
@@ -47,6 +52,7 @@ const UI_ICONS = {
     PROGRESS: "📈",
     HISTORY: "📚",
     PRINT: "🖨",
+    DOWNLOAD: "📄",
     INSIGHTS: "✨",
     HOME: "🏠",
     START: "✓"
@@ -74,6 +80,7 @@ const SCREEN_IDS = [
 
 let progressInsightsTab = "personal";
 let showParticipantForm = false;
+let reportPdfExportInProgress = false;
 
 function escapeHtml(value) {
 
@@ -2066,6 +2073,7 @@ function renderDashboard(report, options = {}) {
     const reportHubActions = `
                 ${renderQuickActionButton("openProgressFromReportBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW, "ui-quick-action-btn")}
                 ${renderQuickActionButton("openHistoryFromReportBtn", UI_ICONS.HISTORY, UI_LABELS.ASSESSMENT_HISTORY, "ui-quick-action-btn")}
+                ${renderQuickActionButton("downloadPdfFromReportBtn", UI_ICONS.DOWNLOAD, UI_LABELS.DOWNLOAD_PDF, "ui-quick-action-btn")}
                 ${renderQuickActionButton("printFromReportBtn", UI_ICONS.PRINT, UI_LABELS.PRINT_REPORT, "ui-quick-action-btn")}
                 ${renderQuickActionButton("restartFromReportBtn", UI_ICONS.RESTART, UI_LABELS.START_NEW_ASSESSMENT, "primary-btn ui-assessment-btn")}`;
 
@@ -2078,7 +2086,9 @@ function renderDashboard(report, options = {}) {
             ${renderScreenToolbar({
                 title: isHistorical ? UI_LABELS.ASSESSMENT_HISTORY : "آپ کی رپورٹ",
                 backId: isHistorical ? "historyReportToolbarBackBtn" : "reportBackBtn",
-                actionsHtml: `<button type="button" id="printBtn" class="primary-btn btn-with-icon no-print">${UI_ICONS.PRINT} ${UI_LABELS.PRINT_REPORT}</button>`,
+                actionsHtml: `
+                    <button type="button" id="downloadPdfBtn" class="secondary-btn btn-with-icon no-print">${UI_ICONS.DOWNLOAD} ${UI_LABELS.DOWNLOAD_PDF}</button>
+                    <button type="button" id="printBtn" class="primary-btn btn-with-icon no-print">${UI_ICONS.PRINT} ${UI_LABELS.PRINT_REPORT}</button>`,
                 printable: true
             })}
 
@@ -2234,6 +2244,8 @@ function renderDashboard(report, options = {}) {
 
     document.getElementById("printFromReportBtn")?.addEventListener("click", printReport);
     document.getElementById("printBtn")?.addEventListener("click", printReport);
+    document.getElementById("downloadPdfFromReportBtn")?.addEventListener("click", handleDownloadReportPdf);
+    document.getElementById("downloadPdfBtn")?.addEventListener("click", handleDownloadReportPdf);
     document.getElementById("restartFromReportBtn")?.addEventListener("click", startQuestionnaire);
 
 }
@@ -2241,6 +2253,68 @@ function renderDashboard(report, options = {}) {
 function printReport() {
 
     window.print();
+
+}
+
+async function handleDownloadReportPdf(event) {
+
+    if (reportPdfExportInProgress) {
+        return;
+    }
+
+    const triggerButton = event?.currentTarget instanceof HTMLButtonElement
+        ? event.currentTarget
+        : null;
+    const reportRoot = document.querySelector("#dashboardScreen .dashboard-report");
+
+    if (!reportRoot) {
+        announceToScreenReader("رپورٹ دستیاب نہیں ہے۔");
+        return;
+    }
+
+    reportPdfExportInProgress = true;
+
+    const labelElement = triggerButton?.querySelector(".ui-btn-label");
+    const originalLabel = labelElement?.textContent?.trim()
+        || triggerButton?.dataset.originalLabel
+        || triggerButton?.textContent?.trim()
+        || UI_LABELS.DOWNLOAD_PDF;
+
+    if (triggerButton) {
+        triggerButton.disabled = true;
+        triggerButton.dataset.originalLabel = originalLabel;
+    }
+
+    if (labelElement) {
+        labelElement.textContent = UI_LABELS.DOWNLOAD_PDF_PREPARING;
+    }
+    else if (triggerButton) {
+        triggerButton.textContent = UI_LABELS.DOWNLOAD_PDF_PREPARING;
+    }
+
+    try {
+        await exportReportToPdf({ sourceElement: reportRoot });
+        announceToScreenReader(UI_LABELS.DOWNLOAD_PDF_SUCCESS);
+    }
+    catch (error) {
+        console.warn("Report PDF export failed.", error);
+        announceToScreenReader(UI_LABELS.DOWNLOAD_PDF_FAILED);
+    }
+    finally {
+        reportPdfExportInProgress = false;
+
+        if (triggerButton) {
+            triggerButton.disabled = false;
+        }
+
+        if (labelElement) {
+            labelElement.textContent = originalLabel;
+        }
+        else if (triggerButton) {
+            triggerButton.textContent = originalLabel;
+            delete triggerButton.dataset.originalLabel;
+        }
+    }
 
 }
 

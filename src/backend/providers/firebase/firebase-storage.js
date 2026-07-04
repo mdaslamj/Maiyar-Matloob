@@ -11,6 +11,7 @@ import {
 } from "./firestore-assessment-sync.js";
 import { BACKEND_PATHS } from "../../backend-schema.js";
 import { createWidgetResult, mapStorageError } from "../../shared/widget-result.js";
+import { mapParticipantDirectoryEntry } from "../supabase/supabase-schema-mapper.js";
 
 const ASSESSMENT_PAGE_SIZE = 200;
 
@@ -227,7 +228,9 @@ export function createFirebaseStorageAdapter() {
                     participantId: data.uid || data.participantId || null,
                     uid: data.uid || data.participantId || null,
                     implementationScore: data.implementationScore ?? null,
-                    overallPercentage: data.overallPercentage ?? null
+                    overallPercentage: data.overallPercentage ?? null,
+                    overallLevel: data.overallLevel ?? null,
+                    timestamp: resolveAssessmentTimestamp(data)
                 };
             });
 
@@ -304,6 +307,95 @@ export function createFirebaseStorageAdapter() {
             catch (error) {
                 console.warn("Unable to load community section aggregates.", error);
                 return [];
+            }
+
+        },
+
+        async loadParticipantDirectory() {
+
+            if (!isFirebaseReady()) {
+                return {
+                    status: "unavailable",
+                    rows: [],
+                    lastUpdated: null,
+                    message: "Backend unavailable."
+                };
+            }
+
+            try {
+                const firestoreModule = await getFirestoreModule();
+                const db = getFirestoreDb();
+                const loadedAt = new Date().toISOString();
+                const participantSnapshot = await firestoreModule.getDocs(
+                    firestoreModule.collection(db, "participants")
+                );
+                const latestAssessmentsByParticipant = new Map();
+                let cursor = null;
+
+                while (true) {
+                    const batch = await this.loadAssessmentScoreBatch({ cursor, limit: ASSESSMENT_PAGE_SIZE });
+
+                    batch.rows.forEach(row => {
+                        const participantId = row.participantId || row.uid;
+
+                        if (participantId && !latestAssessmentsByParticipant.has(participantId)) {
+                            latestAssessmentsByParticipant.set(participantId, {
+                                overallLevel: row.overallLevel || null,
+                                timestamp: row.timestamp || null
+                            });
+                        }
+                    });
+
+                    if (!batch.hasMore || !batch.nextCursor) {
+                        break;
+                    }
+
+                    cursor = batch.nextCursor;
+                }
+
+                const rows = participantSnapshot.docs.map(document => {
+                    const data = document.data() || {};
+
+                    return mapParticipantDirectoryEntry(
+                        {
+                            id: document.id,
+                            assessmentCount: data.assessmentCount,
+                            lastAssessmentAt: data.lastAssessmentAt
+                        },
+                        latestAssessmentsByParticipant.get(document.id)
+                    );
+                }).sort((left, right) => {
+                    const leftTime = left.lastAssessment ? new Date(left.lastAssessment).getTime() : 0;
+                    const rightTime = right.lastAssessment ? new Date(right.lastAssessment).getTime() : 0;
+
+                    return rightTime - leftTime;
+                });
+
+                if (!rows.length) {
+                    return {
+                        status: "empty",
+                        rows: [],
+                        lastUpdated: loadedAt,
+                        message: "No participants yet."
+                    };
+                }
+
+                return {
+                    status: "success",
+                    rows,
+                    lastUpdated: loadedAt,
+                    message: ""
+                };
+            }
+            catch (error) {
+                console.warn("Unable to load participant directory.", error);
+
+                return {
+                    status: "error",
+                    rows: [],
+                    lastUpdated: null,
+                    message: "Unable to load participant directory."
+                };
             }
 
         }

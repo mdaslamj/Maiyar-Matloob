@@ -12,6 +12,7 @@
 import { createProviderPair } from "../src/backend/registry/provider-registry.js";
 import {
     mapAssessmentFromRow,
+    mapParticipantDirectoryEntry,
     mapParticipantFromRow,
     mapParticipantToRow,
     mapReportToRow,
@@ -77,6 +78,19 @@ function testMapper() {
     assert(mappedAssessment.implementationScore === 82.5, "assessment implementation score");
     assert(resolveParticipantStorageId(participant) === "participant-001", "resolve participant id");
     assert(resolveParticipantStorageId(null) === null, "resolve participant id null-safe");
+
+    const directoryEntry = mapParticipantDirectoryEntry(
+        {
+            id: "participant-001",
+            assessment_count: 2,
+            last_assessment_at: "2026-07-01T12:00:00.000Z"
+        },
+        { overallLevel: "Very Good", timestamp: "2026-07-01T12:00:00.000Z" }
+    );
+    assert(directoryEntry.participantId === "participant-001", "directory participant id");
+    assert(directoryEntry.assessments === 2, "directory assessment count");
+    assert(directoryEntry.currentLevel === "Very Good", "directory implementation level");
+    assert(directoryEntry.status === "active", "directory participation status");
 
     console.log("mapper tests: PASS");
 

@@ -1234,6 +1234,47 @@ progress::-webkit-progress-value {
     }
 }
 
+.report-pdf-export-container {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 794px;
+    background: #ffffff;
+    pointer-events: none;
+    z-index: -1;
+    overflow: visible;
+}
+
+.report-pdf-export-container .dashboard-report {
+    gap: 12px;
+    padding: 0;
+}
+
+.report-pdf-export-container .report-card {
+    box-shadow: none;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+}
+
+.report-pdf-export-container .growth-group-panel {
+    display: grid !important;
+}
+
+.report-pdf-export-container .growth-group-toggle {
+    background: transparent;
+    border: none;
+    color: #0f172a;
+    font-weight: 700;
+    padding: 8px 0 4px;
+    min-height: auto;
+    box-shadow: none;
+    transform: none;
+}
+
+.report-pdf-export-container .question-insight-card {
+    break-inside: avoid;
+}
+
 @media print {
     @page {
         size: A4;
