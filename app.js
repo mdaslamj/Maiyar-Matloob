@@ -444,16 +444,33 @@ function renderParticipantAssessmentActions() {
 
 }
 
+function renderWelcomeOrnamentDivider() {
+
+    return `
+        <div class="welcome-ornament-divider" aria-hidden="true">
+            <span class="welcome-ornament-divider__line"></span>
+            <span class="welcome-ornament-divider__star">✦</span>
+            <span class="welcome-ornament-divider__line"></span>
+        </div>`;
+
+}
+
 function renderParticipantNewColumn(participant, isActive) {
 
     return `
         <div class="welcome-panel__column welcome-panel__column--new ${isActive ? "is-active" : "is-dimmed"}">
+            <div class="welcome-panel__intro">
+                ${renderWelcomeOrnamentDivider()}
+                <h3 class="welcome-panel__title">خوش آمدید</h3>
+                <p class="welcome-panel__lead">براہِ کرم جائزہ شروع کرنے کے لیے اپنی تفصیلات درج کریں۔</p>
+            </div>
             <form id="participantForm" class="welcome-panel__form" novalidate>
                 <label class="welcome-panel__field" for="participantName">
                     <span class="welcome-panel__label">پورا نام</span>
-                    <div class="welcome-panel__input-wrap">
-                        <span class="welcome-panel__input-icon" aria-hidden="true">${WELCOME_ICON_SVGS.person}</span>
+                    <div class="welcome-panel__input-wrap welcome-panel__input-wrap--boxed">
+                        <span class="welcome-panel__input-icon-box" aria-hidden="true">${WELCOME_ICON_SVGS.person}</span>
                         <input
+                            class="welcome-panel__input"
                             type="text"
                             id="participantName"
                             name="participantName"
@@ -468,9 +485,10 @@ function renderParticipantNewColumn(participant, isActive) {
 
                 <label class="welcome-panel__field" for="participantMobile">
                     <span class="welcome-panel__label">موبائل نمبر</span>
-                    <div class="welcome-panel__input-wrap">
-                        <span class="welcome-panel__input-icon" aria-hidden="true">${WELCOME_ICON_SVGS.phone}</span>
+                    <div class="welcome-panel__input-wrap welcome-panel__input-wrap--boxed">
+                        <span class="welcome-panel__input-icon-box" aria-hidden="true">${WELCOME_ICON_SVGS.phone}</span>
                         <input
+                            class="welcome-panel__input"
                             type="tel"
                             id="participantMobile"
                             name="participantMobile"
@@ -498,7 +516,10 @@ function renderParticipantReturningColumn(participant) {
 
     return `
         <div class="welcome-panel__column welcome-panel__column--returning is-active">
-            <p class="welcome-panel__greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
+            <div class="welcome-panel__intro welcome-panel__intro--compact">
+                ${renderWelcomeOrnamentDivider()}
+                <p class="welcome-panel__greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
+            </div>
             <div class="welcome-panel__actions">
                 ${renderParticipantAssessmentActions()}
             </div>

@@ -103,7 +103,7 @@ body.welcome-active::after {
 
 body.welcome-active::before {
     z-index: -2;
-    background-image: url("assets/images/maiyaar-architecture-background.jpg");
+    background-image: url("assets/images/maiyaar-home-background.jpg");
     background-position: center center;
     background-size: cover;
     background-repeat: no-repeat;
@@ -113,9 +113,8 @@ body.welcome-active::before {
 body.welcome-active::after {
     z-index: -1;
     background:
-        radial-gradient(circle at 12% 8%, rgba(184, 147, 74, 0.08), transparent 28%),
-        radial-gradient(circle at 88% 92%, rgba(45, 84, 61, 0.06), transparent 24%),
-        rgba(251, 247, 240, 0.78);
+        radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.34), transparent 42%),
+        linear-gradient(180deg, rgba(251, 247, 240, 0.52) 0%, rgba(251, 247, 240, 0.78) 100%);
 }
 
 .container {
