@@ -78,7 +78,7 @@ async function auditPage(page, context) {
         const summary = document.querySelector(".welcome-summary");
         const meta = document.querySelector(".welcome-meta");
         const grid = document.querySelector(".welcome-summary__grid");
-        const cards = [...document.querySelectorAll(".welcome-summary__grid .ui-card")];
+        const cards = grid ? [...grid.querySelectorAll(".welcome-summary-card")] : [];
 
         const add = (severity, code, detail) => issues.push({ severity, code, detail });
 
@@ -137,27 +137,16 @@ async function auditPage(page, context) {
             }
         }
 
-        if (panel?.classList.contains("welcome-panel--single")) {
-            const placeholder = document.querySelector(".welcome-panel__column--returning.is-placeholder");
-            if (placeholder) {
-                add("fail", "empty-placeholder", "returning placeholder visible in single-panel mode");
-            }
-            const divider = document.querySelector(".welcome-panel__divider");
-            if (divider) {
-                add("fail", "single-panel-divider", "divider visible in single-panel mode");
-            }
+        if (panel?.classList.contains("welcome-panel--dual")) {
+            add("fail", "dual-panel-layout", "dual participant layout must not be used");
         }
 
-        if (panel?.classList.contains("welcome-panel--dual")) {
-            const cols = [...document.querySelectorAll(".welcome-panel__column")];
-            if (cols.length !== 2) {
-                add("fail", "dual-column-count", `expected 2 columns, found ${cols.length}`);
-            } else {
-                const hDiff = Math.abs(cols[0].getBoundingClientRect().height - cols[1].getBoundingClientRect().height);
-                if (hDiff > 4 && window.innerWidth > 767) {
-                    add("warn", "dual-column-height", `column height diff ${Math.round(hDiff)}px`);
-                }
-            }
+        if (document.querySelector(".welcome-panel__divider")) {
+            add("fail", "participant-divider", "participant divider must not be used");
+        }
+
+        if (cards.length !== 3) {
+            add("fail", "dashboard-card-count", `expected 3 dashboard cards, found ${cards.length}`);
         }
 
         if (grid && cards.length === 3) {
@@ -197,7 +186,7 @@ async function auditPage(page, context) {
             context: contextLabel,
             viewport: { width: clientW, height: clientH },
             scroll: { width: scrollW, height: scrollH, overflowY },
-            panelMode: panel?.classList.contains("welcome-panel--dual") ? "dual" : "single",
+            panelMode: "unified",
             issueCount: issues.length,
             issues
         };
@@ -247,9 +236,9 @@ async function captureScreenshot(page, fileName) {
                 await waitForWelcome(page);
 
                 if (mode === "returning") {
-                    await page.waitForSelector(".welcome-panel--dual", { timeout: 10000 });
+                    await page.waitForSelector(".welcome-panel__returning:not([hidden])", { timeout: 10000 });
                 } else {
-                    await page.waitForSelector(".welcome-panel--single", { timeout: 10000 });
+                    await page.waitForSelector(".welcome-panel__identity:not([hidden])", { timeout: 10000 });
                 }
 
                 const context = `${vp.label}/${mode}`;

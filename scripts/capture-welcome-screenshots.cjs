@@ -85,7 +85,7 @@ async function capture(page, fileName, options = {}) {
         }, RETURNING_PARTICIPANT_STORE);
         await returningPage.goto(BASE_URL, { waitUntil: "networkidle0", timeout: 30000 });
         await waitForWelcomeReady(returningPage);
-        await returningPage.waitForSelector(".welcome-panel__column--returning.is-active", { timeout: 10000 });
+        await returningPage.waitForSelector(".welcome-panel__returning:not([hidden])", { timeout: 10000 });
         await capture(returningPage, "desktop-returning-1920x1080-fullpage.png");
         await capture(returningPage, "desktop-returning-1920x1080-viewport.png", { fullPage: false });
 
@@ -116,7 +116,7 @@ async function capture(page, fileName, options = {}) {
         }, RETURNING_PARTICIPANT_STORE);
         await mobileReturningPage.goto(BASE_URL, { waitUntil: "networkidle0", timeout: 30000 });
         await waitForWelcomeReady(mobileReturningPage);
-        await mobileReturningPage.waitForSelector(".welcome-panel__column--returning.is-active", { timeout: 10000 });
+        await mobileReturningPage.waitForSelector(".welcome-panel__returning:not([hidden])", { timeout: 10000 });
         await capture(mobileReturningPage, "mobile-returning-390x844-fullpage.png");
         await capture(mobileReturningPage, "mobile-returning-390x844-viewport.png", { fullPage: false });
     }

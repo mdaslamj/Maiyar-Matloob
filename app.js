@@ -267,11 +267,12 @@ function renderQuickActionButton(id, icon, label, className = "ui-quick-action-b
 
 }
 
-function renderWelcomeActionButton(id, iconKey, label, className = "welcome-action-btn secondary-btn ui-assessment-btn") {
+function renderWelcomeActionButton(id, iconKey, label, className = "welcome-action-btn secondary-btn ui-assessment-btn", disabled = false) {
 
     const icon = WELCOME_ICON_SVGS[iconKey] || "";
+    const disabledAttr = disabled ? " disabled" : "";
 
-    return `<button type="button" id="${id}" class="${className}"><span class="welcome-action-btn__icon" aria-hidden="true">${icon}</span><span class="welcome-action-btn__label">${escapeHtml(label)}</span></button>`;
+    return `<button type="button" id="${id}" class="${className}"${disabledAttr}><span class="welcome-action-btn__icon" aria-hidden="true">${icon}</span><span class="welcome-action-btn__label">${escapeHtml(label)}</span></button>`;
 
 }
 
@@ -296,6 +297,7 @@ function initializeApp() {
     setQuestionnaireLoadState("loading");
     bindEvents();
     initializeScreenAccessibility();
+    renderWelcomeDashboard();
     loadQuestionnaire();
 
 }
@@ -371,9 +373,12 @@ function setQuestionnaireLoadState(state) {
         errorMessage.hidden = state !== "error";
     }
 
+    if (state === "loading" || state === "ready") {
+        renderWelcomeDashboard();
+    }
+
     if (state === "ready") {
         renderParticipantSection();
-        renderWelcomeDashboard();
     }
 
 }
@@ -455,12 +460,13 @@ function renderWelcomeOrnamentDivider() {
 
 }
 
-function renderParticipantNewColumn(participant, isActive) {
+function renderParticipantIdentityBlock(participant, hidden) {
+
+    const hiddenAttr = hidden ? " hidden" : "";
 
     return `
-        <div class="welcome-panel__column welcome-panel__column--new ${isActive ? "is-active" : "is-dimmed"}">
+        <div class="welcome-panel__identity"${hiddenAttr}>
             <div class="welcome-panel__intro">
-                ${renderWelcomeOrnamentDivider()}
                 <h3 class="welcome-panel__title">خوش آمدید</h3>
                 <p class="welcome-panel__lead">براہِ کرم جائزہ شروع کرنے کے لیے اپنی تفصیلات درج کریں۔</p>
             </div>
@@ -512,18 +518,20 @@ function renderParticipantNewColumn(participant, isActive) {
 
 }
 
-function renderParticipantReturningColumn(participant) {
+function renderParticipantReturningBlock(participant, hidden) {
+
+    const hiddenAttr = hidden ? " hidden" : "";
+    const greeting = participant
+        ? `<p class="welcome-panel__greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>`
+        : "";
 
     return `
-        <div class="welcome-panel__column welcome-panel__column--returning is-active">
-            <div class="welcome-panel__intro welcome-panel__intro--compact">
-                ${renderWelcomeOrnamentDivider()}
-                <p class="welcome-panel__greeting">خوش آمدید، <strong>${escapeHtml(participant.name)}</strong></p>
-            </div>
+        <div class="welcome-panel__returning"${hiddenAttr}>
+            ${greeting}
             <div class="welcome-panel__actions">
-                ${renderParticipantAssessmentActions()}
+                ${participant ? renderParticipantAssessmentActions() : ""}
             </div>
-            <button type="button" id="changeParticipantBtn" class="welcome-panel__link">شناخت تبدیل کریں</button>
+            <button type="button" id="changeParticipantBtn" class="welcome-panel__link"${participant ? "" : " hidden"}>شناخت تبدیل کریں</button>
         </div>`;
 
 }
@@ -545,19 +553,16 @@ function renderParticipantSection() {
 
     const showReturning = Boolean(participant && !showParticipantForm);
 
-    if (showReturning) {
-        section.innerHTML = `
-            <article class="welcome-panel welcome-panel--dual">
-                ${renderParticipantNewColumn(participant, false)}
-                <div class="welcome-panel__divider" role="separator" aria-hidden="true"></div>
-                ${renderParticipantReturningColumn(participant)}
-            </article>`;
-    } else {
-        section.innerHTML = `
-            <article class="welcome-panel welcome-panel--single">
-                ${renderParticipantNewColumn(participant, true)}
-            </article>`;
-    }
+    section.innerHTML = `
+        <article class="welcome-panel">
+            <div class="welcome-panel__crest" aria-hidden="true">
+                ${renderWelcomeOrnamentDivider()}
+            </div>
+            <div class="welcome-panel__content">
+                ${renderParticipantReturningBlock(participant, !showReturning)}
+                ${renderParticipantIdentityBlock(participant, showReturning)}
+            </div>
+        </article>`;
 
     document.getElementById("participantForm")?.addEventListener("submit", handleParticipantFormSubmit);
 
@@ -704,61 +709,179 @@ function ensureParticipantIdentity() {
 
 }
 
+function hasWelcomeAssessmentData(dashboard = {}) {
+
+    return (dashboard.assessmentCount || 0) > 0;
+
+}
+
+function renderWelcomeProgressCard(ready, hasAssessmentData, overview = {}) {
+
+    if (!ready) {
+        return renderUICard({
+            type: "summary",
+            className: "welcome-summary-card dashboard-card dashboard-card--progress",
+            title: UI_LABELS.PROGRESS_REVIEW,
+            bodyHtml: `<p class="ui-empty">سوالنامہ لوڈ ہو رہا ہے...</p>`,
+            footerHtml: renderWelcomeActionButton(
+                "welcomeProgressBtn",
+                "progress",
+                UI_LABELS.OPEN_PROGRESS_REVIEW,
+                "secondary-btn ui-assessment-btn welcome-action-btn",
+                true
+            )
+        });
+    }
+
+    if (!hasAssessmentData) {
+        return renderUICard({
+            type: "summary",
+            className: "welcome-summary-card dashboard-card dashboard-card--progress",
+            title: UI_LABELS.PROGRESS_REVIEW,
+            bodyHtml: `<p class="ui-empty">${escapeHtml(getTrendClassificationLabel("Insufficient Data"))}</p>`,
+            footerHtml: renderWelcomeActionButton(
+                "welcomeProgressBtn",
+                "progress",
+                UI_LABELS.OPEN_PROGRESS_REVIEW,
+                "secondary-btn ui-assessment-btn welcome-action-btn",
+                true
+            )
+        });
+    }
+
+    const trendLabel = overview.overallTrend?.classification
+        ? getTrendClassificationLabel(overview.overallTrend.classification)
+        : getTrendClassificationLabel("Insufficient Data");
+    const trendMeta = overview.overallTrend?.deltaPercentage != null
+        ? `${formatUrduPercent(overview.overallTrend.deltaPercentage, { showSign: true })} تبدیلی`
+        : "مزید جائزوں کی ضرورت";
+
+    return renderUICard({
+        type: "summary",
+        className: "welcome-summary-card dashboard-card dashboard-card--progress",
+        title: UI_LABELS.PROGRESS_REVIEW,
+        bodyHtml: `
+            <div class="ui-metric-grid ui-metric-grid--compact">
+                ${renderMetricRow("مجموعی پیش رفت", trendLabel, trendMeta)}
+            </div>`,
+        footerHtml: renderWelcomeActionButton(
+            "welcomeProgressBtn",
+            "progress",
+            UI_LABELS.OPEN_PROGRESS_REVIEW,
+            "secondary-btn ui-assessment-btn welcome-action-btn"
+        )
+    });
+
+}
+
+function renderWelcomeHistoryCard(ready, hasAssessmentData) {
+
+    if (!ready) {
+        return renderUICard({
+            type: "summary",
+            className: "welcome-summary-card dashboard-card dashboard-card--history",
+            title: UI_LABELS.ASSESSMENT_HISTORY,
+            bodyHtml: `<p class="ui-empty">سوالنامہ لوڈ ہو رہا ہے...</p>`,
+            footerHtml: renderWelcomeActionButton(
+                "welcomeHistoryBtn",
+                "history",
+                UI_LABELS.OPEN_ASSESSMENT_HISTORY,
+                "secondary-btn ui-assessment-btn welcome-action-btn",
+                true
+            )
+        });
+    }
+
+    if (!hasAssessmentData) {
+        return renderUICard({
+            type: "summary",
+            className: "welcome-summary-card dashboard-card dashboard-card--history",
+            title: UI_LABELS.ASSESSMENT_HISTORY,
+            bodyHtml: `<p class="ui-empty">ابھی تک کوئی جائزہ نہیں</p>`,
+            footerHtml: renderWelcomeActionButton(
+                "welcomeHistoryBtn",
+                "history",
+                UI_LABELS.OPEN_ASSESSMENT_HISTORY,
+                "secondary-btn ui-assessment-btn welcome-action-btn",
+                true
+            )
+        });
+    }
+
+    return renderUICard({
+        type: "summary",
+        className: "welcome-summary-card dashboard-card dashboard-card--history",
+        title: UI_LABELS.ASSESSMENT_HISTORY,
+        bodyHtml: `<p class="ui-card__text">اپنے پچھلے جائزوں اور غور و فکر کو دیکھیں۔</p>`,
+        footerHtml: renderWelcomeActionButton(
+            "welcomeHistoryBtn",
+            "history",
+            UI_LABELS.OPEN_ASSESSMENT_HISTORY,
+            "secondary-btn ui-assessment-btn welcome-action-btn"
+        )
+    });
+
+}
+
+function renderWelcomeQualityCard(ready, hasAssessmentData, dashboard = {}, overview = {}) {
+
+    if (!ready) {
+        return renderUICard({
+            type: "status",
+            className: "welcome-summary-card dashboard-card dashboard-card--quality",
+            title: "آج کی کیفیت",
+            bodyHtml: `<p class="ui-empty">سوالنامہ لوڈ ہو رہا ہے...</p>`
+        });
+    }
+
+    if (!hasAssessmentData) {
+        return renderUICard({
+            type: "status",
+            className: "welcome-summary-card dashboard-card dashboard-card--quality",
+            title: "آج کی کیفیت",
+            bodyHtml: `
+                <div class="ui-metric-grid ui-metric-grid--compact">
+                    ${renderMetricRow("موجودہ سطح", getTrendClassificationLabel("Insufficient Data"))}
+                    ${renderMetricRow("آخری جائزہ", "—")}
+                    ${renderMetricRow("مجموعی پیش رفت", getTrendClassificationLabel("Insufficient Data"))}
+                </div>`
+        });
+    }
+
+    return renderUICard({
+        type: "status",
+        className: "welcome-summary-card dashboard-card dashboard-card--quality",
+        title: "آج کی کیفیت",
+        bodyHtml: `
+            <div class="ui-metric-grid ui-metric-grid--compact">
+                ${renderMetricRow("موجودہ سطح", dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—", dashboard.currentOverallPercentage != null ? formatUrduPercent(dashboard.currentOverallPercentage) : "")}
+                ${renderMetricRow("آخری جائزہ", dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—")}
+                ${renderMetricRow("مجموعی پیش رفت", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : getTrendClassificationLabel("Insufficient Data"), overview.overallTrend?.deltaPercentage != null ? `${formatUrduPercent(overview.overallTrend.deltaPercentage, { showSign: true })} تبدیلی` : "مزید جائزوں کی ضرورت")}
+            </div>`
+    });
+
+}
+
 function renderWelcomeDashboard() {
 
     const container = document.getElementById("welcomeDashboard");
-    const startButtonReady = application.questionnaireReady && application.questionnaire.length > 0;
+    const ready = application.questionnaireReady && application.questionnaire.length > 0;
 
     if (!container) {
         return;
     }
 
-    if (!startButtonReady) {
-        container.innerHTML = `
-            <div class="welcome-summary__grid">
-                <div class="welcome-summary-card ui-card ui-card--status">
-                    <div class="ui-card__body">
-                        <p class="ui-empty">سوالنامہ تیار ہونے کے بعد یہاں آپ کا ذاتی صفحہ ظاہر ہوگا۔</p>
-                    </div>
-                </div>
-            </div>`;
-        return;
-    }
-
-    const bundle = application.getGrowthBundle();
-    const dashboard = getDomainData(bundle.dashboard);
-    const growthDashboard = getDomainData(bundle.growthDashboard);
+    const bundle = ready ? application.getGrowthBundle() : null;
+    const dashboard = ready ? getDomainData(bundle.dashboard) : {};
+    const growthDashboard = ready ? getDomainData(bundle.growthDashboard) : {};
     const overview = growthDashboard.overview || {};
+    const hasAssessmentData = ready && hasWelcomeAssessmentData(dashboard);
 
     container.innerHTML = `
         <div class="welcome-summary__grid">
-            ${renderUICard({
-                type: "status",
-                className: "welcome-summary-card dashboard-card dashboard-card--status",
-                title: "آج کی کیفیت",
-                bodyHtml: `
-                    <div class="ui-metric-grid ui-metric-grid--compact">
-                        ${renderMetricRow("موجودہ سطح", dashboard.currentOverallLevel ? getPerformanceLevelLabel(dashboard.currentOverallLevel) : "—", dashboard.currentOverallPercentage != null ? formatUrduPercent(dashboard.currentOverallPercentage) : "")}
-                        ${renderMetricRow("آخری جائزہ", dashboard.lastAssessmentDate ? formatAssessmentDate(dashboard.lastAssessmentDate) : "—")}
-                        ${renderMetricRow("مجموعی پیش رفت", overview.overallTrend?.classification ? getTrendClassificationLabel(overview.overallTrend.classification) : "—", overview.overallTrend?.deltaPercentage != null ? `${formatUrduPercent(overview.overallTrend.deltaPercentage, { showSign: true })} تبدیلی` : "مزید جائزوں کی ضرورت")}
-                    </div>`
-            })}
-
-            ${renderUICard({
-                type: "summary",
-                className: "welcome-summary-card dashboard-card dashboard-card--history",
-                title: UI_LABELS.ASSESSMENT_HISTORY,
-                bodyHtml: `<p class="ui-card__text">اپنے پچھلے جائزوں اور غور و فکر کو دیکھیں۔</p>`,
-                footerHtml: renderWelcomeActionButton("welcomeHistoryBtn", "history", UI_LABELS.OPEN_ASSESSMENT_HISTORY, "secondary-btn ui-assessment-btn welcome-action-btn")
-            })}
-
-            ${renderUICard({
-                type: "summary",
-                className: "welcome-summary-card dashboard-card dashboard-card--progress",
-                title: UI_LABELS.PROGRESS_REVIEW,
-                bodyHtml: `<p class="ui-card__text">پچھلے اور تازہ جائزے کا موازنہ دیکھیں۔</p>`,
-                footerHtml: renderWelcomeActionButton("welcomeProgressBtn", "progress", UI_LABELS.OPEN_PROGRESS_REVIEW, "secondary-btn ui-assessment-btn welcome-action-btn")
-            })}
+            ${renderWelcomeProgressCard(ready, hasAssessmentData, overview)}
+            ${renderWelcomeHistoryCard(ready, hasAssessmentData)}
+            ${renderWelcomeQualityCard(ready, hasAssessmentData, dashboard, overview)}
         </div>`;
 
     const actionMap = {
@@ -769,7 +892,7 @@ function renderWelcomeDashboard() {
     Object.entries(actionMap).forEach(([elementId, action]) => {
         const element = document.getElementById(elementId);
 
-        if (element) {
+        if (element && !element.disabled) {
             element.setAttribute("data-action", action);
         }
     });
