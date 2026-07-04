@@ -2365,7 +2365,7 @@ function renderDashboard(report, options = {}) {
     const presentation = isHistorical && snapshot
         ? application.getHistoricalDashboardPresentation(report, snapshot)
         : application.getDashboardPresentation(report);
-    const { reportSections, insights, sectionPresentation } = presentation;
+    const { reportSections, insights, sectionPresentation, rawScores } = presentation;
     const overallScoreLabel = rawScores.overall.max
         ? `${rawScores.overall.raw}/${rawScores.overall.max}`
         : formatUrduPercent(overall.percentage);
