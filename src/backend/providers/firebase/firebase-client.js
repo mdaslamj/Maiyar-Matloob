@@ -5,6 +5,11 @@ import {
     isFirebaseConfigComplete
 } from "./firebase-config.js";
 import { getAdminAllowedEmails as loadAdminAllowedEmails } from "../../backend-config.js";
+import {
+    getAdminAllowedEmailsFromModule,
+    getFirebaseConfigFromModule,
+    loadRuntimeConfigModule
+} from "../../config/runtime-config-loader.js";
 
 const FIREBASE_APP_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-app.js`;
 const FIRESTORE_URL = `https://www.gstatic.com/firebasejs/${FIREBASE_SDK_VERSION}/firebase-firestore.js`;
@@ -65,31 +70,26 @@ export function isFirebaseReady() {
 
 async function loadLocalFirebaseConfig() {
 
-    for (const path of ["../../../firebase/firebase-config.local.js", "./firebase-config.local.js"]) {
-        try {
-            const localModule = await import(path);
+    const configModule = await loadRuntimeConfigModule();
 
-            if (localModule.FIREBASE_CONFIG) {
-                resolvedConfig = {
-                    ...FIREBASE_CONFIG,
-                    ...localModule.FIREBASE_CONFIG
-                };
-            }
-            else if (localModule.BACKEND_PROVIDER_CONFIG?.firebase) {
-                resolvedConfig = {
-                    ...FIREBASE_CONFIG,
-                    ...localModule.BACKEND_PROVIDER_CONFIG.firebase
-                };
-            }
+    if (configModule) {
+        const firebaseConfig = getFirebaseConfigFromModule(configModule);
 
-            if (Array.isArray(localModule.ADMIN_ALLOWED_EMAILS)) {
-                adminAllowedEmails = localModule.ADMIN_ALLOWED_EMAILS.filter(Boolean);
-            }
-
-            return true;
+        if (firebaseConfig) {
+            resolvedConfig = {
+                ...FIREBASE_CONFIG,
+                ...firebaseConfig
+            };
         }
-        catch (error) {
-            // Try next path.
+
+        const moduleEmails = getAdminAllowedEmailsFromModule(configModule);
+
+        if (moduleEmails.length) {
+            adminAllowedEmails = moduleEmails;
+        }
+
+        if (firebaseConfig || moduleEmails.length) {
+            return true;
         }
     }
 

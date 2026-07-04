@@ -63,7 +63,7 @@ export function renderAdminStorageVerificationBanner() {
 
     return `
         <div class="admin-dev-banner" role="status">
-            Storage Verification Mode — Authentication Disabled
+            Storage Verification Mode – Authentication Deferred
         </div>`;
 
 }
@@ -77,7 +77,7 @@ export function getAdminNavigationStatusNote(options = {}) {
     }
 
     if (storageVerificationMode) {
-        return liveDataEnabled ? "Live data" : "Storage verification";
+        return liveDataEnabled ? "Live data" : "Authentication deferred";
     }
 
     if (resolveAdminGateMode() === ADMIN_GATE_MODES.FIREBASE_AUTH) {

@@ -1,4 +1,8 @@
 import { getBackendProvider } from "../../backend-config.js";
+import {
+    getSupabaseConfigFromModule,
+    loadRuntimeConfigModule
+} from "../../config/runtime-config-loader.js";
 
 const SUPABASE_ESM_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/+esm";
 
@@ -52,30 +56,16 @@ export function isSupabaseConfigComplete(config = resolvedConfig) {
 
 async function loadLocalSupabaseConfig() {
 
-    const candidates = [
-        "../../config/backend-config.local.js",
-        "../../../firebase/firebase-config.local.js"
-    ];
+    const configModule = await loadRuntimeConfigModule();
+    const providerConfig = getSupabaseConfigFromModule(configModule);
 
-    for (const path of candidates) {
-        try {
-            const localModule = await import(path);
-            const providerConfig = localModule.BACKEND_PROVIDER_CONFIG?.supabase
-                || localModule.SUPABASE_CONFIG
-                || null;
+    if (providerConfig) {
+        resolvedConfig = {
+            ...DEFAULT_SUPABASE_CONFIG,
+            ...providerConfig
+        };
 
-            if (providerConfig) {
-                resolvedConfig = {
-                    ...DEFAULT_SUPABASE_CONFIG,
-                    ...providerConfig
-                };
-
-                return true;
-            }
-        }
-        catch (error) {
-            // Try next path.
-        }
+        return true;
     }
 
     resolvedConfig = { ...DEFAULT_SUPABASE_CONFIG };

@@ -12,6 +12,7 @@ import {
     renderAdminAuthNotConfigured,
     renderAdminDevelopmentModeBanner,
     renderAdminFirebaseRequired,
+    renderAdminStorageVerificationBanner,
     resolveAdminGateMode
 } from "../src/admin/admin-auth-gate.js";
 
@@ -129,6 +130,29 @@ function testSupabaseAndFutureProviders() {
 
 }
 
+function testSupabaseStorageVerificationMode() {
+
+    const banner = renderAdminStorageVerificationBanner();
+    assert(
+        banner.includes("Storage Verification Mode – Authentication Deferred"),
+        "storage verification banner text"
+    );
+
+    withFlags({
+        USE_BACKEND_SYNC: true,
+        USE_FIREBASE: false,
+        BACKEND_PROVIDER: "supabase"
+    }, () => {
+        assert(
+            resolveAdminGateMode() === ADMIN_GATE_MODES.AUTH_NOT_CONFIGURED,
+            "supabase without storage config remains blocked"
+        );
+    });
+
+    console.log("supabase storage verification mode: PASS");
+
+}
+
 function testFirebaseProviderModes() {
 
     withFlags({
@@ -168,6 +192,7 @@ function main() {
 
     testDevelopmentMode();
     testSupabaseAndFutureProviders();
+    testSupabaseStorageVerificationMode();
     testFirebaseProviderModes();
     console.log("Version 2.3.2 admin gate tests completed.");
 

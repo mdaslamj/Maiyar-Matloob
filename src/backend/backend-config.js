@@ -1,4 +1,8 @@
 import { FEATURE_FLAGS } from "../shared/feature-flags.js";
+import {
+    getAdminAllowedEmailsFromModule,
+    loadRuntimeConfigModule
+} from "./config/runtime-config-loader.js";
 
 export const BACKEND_PROVIDERS = Object.freeze([
     "none",
@@ -28,28 +32,18 @@ async function loadLocalBackendConfig() {
     }
 
     localConfigPromise = (async () => {
-        const candidates = [
-            "./config/backend-config.local.js",
-            "../firebase/firebase-config.local.js"
-        ];
+        const localModule = await loadRuntimeConfigModule();
 
-        for (const path of candidates) {
-            try {
-                const localModule = await import(path);
+        if (localModule) {
+            resolvedLocalConfig = {
+                adminAllowedEmails: getAdminAllowedEmailsFromModule(localModule),
+                providerConfig: localModule.BACKEND_PROVIDER_CONFIG
+                    || (localModule.FIREBASE_CONFIG ? { firebase: localModule.FIREBASE_CONFIG } : null)
+                    || null,
+                raw: localModule
+            };
 
-                resolvedLocalConfig = {
-                    adminAllowedEmails: Array.isArray(localModule.ADMIN_ALLOWED_EMAILS)
-                        ? localModule.ADMIN_ALLOWED_EMAILS.filter(Boolean)
-                        : [],
-                    providerConfig: localModule.BACKEND_PROVIDER_CONFIG || localModule.FIREBASE_CONFIG || null,
-                    raw: localModule
-                };
-
-                return resolvedLocalConfig;
-            }
-            catch (error) {
-                // Try next candidate path.
-            }
+            return resolvedLocalConfig;
         }
 
         resolvedLocalConfig = {

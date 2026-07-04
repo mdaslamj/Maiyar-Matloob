@@ -1,5 +1,6 @@
 /**
  * Copy to `backend-config.local.js` in this folder and replace placeholders.
+ * For deployment, use tracked `backend-config.public.js` (publishable keys only).
  * Legacy `src/firebase/firebase-config.local.js` is also supported.
  * Do not commit backend-config.local.js — it is gitignored.
  */
