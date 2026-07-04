@@ -1,4 +1,10 @@
-import { IMPLEMENTATION_BUCKETS } from "./admin-sample-data.js";
+import { RESPONSE_BUCKETS } from "../trend/trend-community-config.js";
+
+function resolveBuckets(options = {}) {
+
+    return options.buckets?.length ? options.buckets : RESPONSE_BUCKETS;
+
+}
 
 export function escapeHtml(value) {
 
@@ -141,10 +147,11 @@ export function renderMetricCard(label, value, meta = "") {
 export function renderDistributionBars(distribution = {}, options = {}) {
 
     const compact = options.compact === true;
+    const buckets = resolveBuckets(options);
 
     return `
         <div class="admin-distribution${compact ? " admin-distribution--compact" : ""}" role="list" aria-label="Implementation distribution">
-            ${IMPLEMENTATION_BUCKETS.map(bucket => {
+            ${buckets.map(bucket => {
                 const value = distribution[bucket.key] ?? 0;
 
                 return `
@@ -162,11 +169,13 @@ export function renderDistributionBars(distribution = {}, options = {}) {
 
 }
 
-export function renderDistributionCards(distribution = {}) {
+export function renderDistributionCards(distribution = {}, options = {}) {
+
+    const buckets = resolveBuckets(options);
 
     return `
         <div class="admin-distribution-cards">
-            ${IMPLEMENTATION_BUCKETS.map(bucket => `
+            ${buckets.map(bucket => `
                 <article class="ui-card ui-card--compact admin-bucket-card">
                     <div class="ui-card__body">
                         <span class="ui-metric__label">${escapeHtml(bucket.label)}</span>

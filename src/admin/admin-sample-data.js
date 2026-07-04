@@ -15,19 +15,20 @@
 
 import { getCanonicalSectionName } from "../report/report.js";
 import {
+    buildImplementationBuckets,
+    createEmptyDistribution,
+    normalizeDistributionValues,
+    RESPONSE_BUCKETS
+} from "../trend/trend-community-config.js";
+import {
     buildAdminInsightsPresentation,
     enrichAdminQuestionRecords
 } from "../presentation/admin-section-presentation.js";
 
 export const ADMIN_SAMPLE_SCHEMA_VERSION = 1;
 
-export const IMPLEMENTATION_BUCKETS = [
-    { key: "always", label: "Always" },
-    { key: "often", label: "Often" },
-    { key: "sometimes", label: "Sometimes" },
-    { key: "rarely", label: "Rarely" },
-    { key: "never", label: "Never" }
-];
+/** @deprecated Use buildImplementationBuckets(questionnaire.responseScale) */
+export const IMPLEMENTATION_BUCKETS = RESPONSE_BUCKETS;
 
 const TEACHING_CATALOG = [
     { id: "truthfulness", name: "Truthfulness", profile: "strong" },
@@ -51,9 +52,9 @@ const TEACHING_CATALOG = [
 ];
 
 const PROFILE_DISTRIBUTIONS = {
-    strong: { always: 42, often: 31, sometimes: 16, rarely: 7, never: 4 },
-    moderate: { always: 24, often: 28, sometimes: 26, rarely: 14, never: 8 },
-    weak: { always: 11, often: 14, sometimes: 22, rarely: 23, never: 30 }
+    strong: { always: 42, often: 31, sometimes: 16, never: 11 },
+    moderate: { always: 24, often: 28, sometimes: 26, never: 22 },
+    weak: { always: 11, often: 14, sometimes: 22, never: 53 }
 };
 
 const SAMPLE_USERS = [
@@ -78,10 +79,10 @@ const IMPLEMENTATION_TRENDS = [
     { id: "seeking-knowledge", teachingName: "Seeking Knowledge", direction: "up", summary: "Learning efforts are trending upward." }
 ];
 
-function shiftDistribution(base, offset) {
+function shiftDistribution(base, offset, buckets) {
 
     const shifted = { ...base };
-    const keys = IMPLEMENTATION_BUCKETS.map(bucket => bucket.key);
+    const keys = buckets.map(bucket => bucket.key);
     const fromIndex = Math.abs(offset) % keys.length;
     const toIndex = (fromIndex + 1) % keys.length;
     const amount = 3 + (Math.abs(offset) % 4);
@@ -89,25 +90,13 @@ function shiftDistribution(base, offset) {
     shifted[keys[fromIndex]] = Math.max(0, shifted[keys[fromIndex]] - amount);
     shifted[keys[toIndex]] = shifted[keys[toIndex]] + amount;
 
-    return normalizeDistribution(shifted);
+    return normalizeDistribution(shifted, buckets);
 
 }
 
-function normalizeDistribution(distribution) {
+function normalizeDistribution(distribution, buckets) {
 
-    const total = IMPLEMENTATION_BUCKETS.reduce((sum, bucket) => sum + (distribution[bucket.key] || 0), 0);
-
-    if (!total) {
-        return { always: 20, often: 20, sometimes: 20, rarely: 20, never: 20 };
-    }
-
-    const normalized = {};
-
-    IMPLEMENTATION_BUCKETS.forEach(bucket => {
-        normalized[bucket.key] = Number(((distribution[bucket.key] || 0) / total * 100).toFixed(1));
-    });
-
-    return normalized;
+    return normalizeDistributionValues(distribution, buckets);
 
 }
 
@@ -132,10 +121,10 @@ function buildTeachingRankings() {
 
 }
 
-function buildQuestionImplementation(question, index) {
+function buildQuestionImplementation(question, index, buckets) {
 
     const profile = index % 5 === 0 ? "weak" : index % 3 === 0 ? "moderate" : "strong";
-    const distribution = shiftDistribution(PROFILE_DISTRIBUTIONS[profile], index % 7);
+    const distribution = shiftDistribution(PROFILE_DISTRIBUTIONS[profile], index % 7, buckets);
 
     return {
         questionId: question.id,
@@ -149,7 +138,7 @@ function buildQuestionImplementation(question, index) {
 
 }
 
-function buildSectionImplementation(questions) {
+function buildSectionImplementation(questions, buckets) {
 
     const sections = {};
 
@@ -159,14 +148,14 @@ function buildSectionImplementation(questions) {
                 sectionId: question.section,
                 sectionTitle: question.section,
                 questionCount: 0,
-                distribution: { always: 0, often: 0, sometimes: 0, rarely: 0, never: 0 }
+                distribution: createEmptyDistribution(buckets)
             };
         }
 
         const section = sections[question.section];
         section.questionCount += 1;
 
-        IMPLEMENTATION_BUCKETS.forEach(bucket => {
+        buckets.forEach(bucket => {
             section.distribution[bucket.key] += question.distribution[bucket.key];
         });
     });
@@ -175,7 +164,7 @@ function buildSectionImplementation(questions) {
         const count = section.questionCount || 1;
         const distribution = {};
 
-        IMPLEMENTATION_BUCKETS.forEach(bucket => {
+        buckets.forEach(bucket => {
             distribution[bucket.key] = Number((section.distribution[bucket.key] / count).toFixed(1));
         });
 
@@ -190,12 +179,12 @@ function buildSectionImplementation(questions) {
 
 }
 
-function buildOverallDistribution(questions) {
+function buildOverallDistribution(questions, buckets) {
 
-    const totals = { always: 0, often: 0, sometimes: 0, rarely: 0, never: 0 };
+    const totals = createEmptyDistribution(buckets);
 
     questions.forEach(question => {
-        IMPLEMENTATION_BUCKETS.forEach(bucket => {
+        buckets.forEach(bucket => {
             totals[bucket.key] += question.distribution[bucket.key];
         });
     });
@@ -203,7 +192,7 @@ function buildOverallDistribution(questions) {
     const count = questions.length || 1;
     const distribution = {};
 
-    IMPLEMENTATION_BUCKETS.forEach(bucket => {
+    buckets.forEach(bucket => {
         distribution[bucket.key] = Number((totals[bucket.key] / count).toFixed(1));
     });
 
@@ -270,11 +259,14 @@ function buildSettings() {
 
 function buildSampleDataFromQuestionnaire(questionnaire) {
 
+    const implementationBuckets = buildImplementationBuckets(questionnaire?.responseScale);
     const questions = enrichAdminQuestionRecords(
         questionnaire,
-        (questionnaire?.questions || []).map(buildQuestionImplementation)
+        (questionnaire?.questions || []).map((question, index) => (
+            buildQuestionImplementation(question, index, implementationBuckets)
+        ))
     );
-    const sections = buildSectionImplementation(questions);
+    const sections = buildSectionImplementation(questions, implementationBuckets);
     const teachings = buildTeachingRankings();
     const mostImplementedTeachings = [...teachings]
         .sort((left, right) => right.positiveRate - left.positiveRate)
@@ -284,8 +276,9 @@ function buildSampleDataFromQuestionnaire(questionnaire) {
         .slice(0, 10);
     const baseData = {
         schemaVersion: ADMIN_SAMPLE_SCHEMA_VERSION,
+        implementationBuckets,
         summary: buildSummary(sections, SAMPLE_USERS),
-        overallDistribution: buildOverallDistribution(questions),
+        overallDistribution: buildOverallDistribution(questions, implementationBuckets),
         mostImplementedTeachings,
         leastImplementedTeachings,
         questions,
@@ -300,7 +293,8 @@ function buildSampleDataFromQuestionnaire(questionnaire) {
         sections: baseData.sections,
         mostImplementedTeachings: baseData.mostImplementedTeachings,
         leastImplementedTeachings: baseData.leastImplementedTeachings,
-        trends: baseData.trends
+        trends: baseData.trends,
+        implementationBuckets
     });
 
     return {

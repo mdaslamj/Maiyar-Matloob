@@ -1927,7 +1927,7 @@ function createQuestionMarkup(question) {
     const explanation = question?.explanation || "";
     const explanationMarkup = `
         <div class="question-explanation">
-            <button type="button" class="explanation-toggle" aria-expanded="false" aria-controls="questionExplanationPanel">▼ Why is this question asked?</button>
+            <button type="button" class="explanation-toggle" aria-expanded="false" aria-controls="questionExplanationPanel">▼ یہ سوال کیوں پوچھا جا رہا ہے؟</button>
             <div id="questionExplanationPanel" class="explanation-panel" hidden>
                 <div class="explanation-body">${explanation}</div>
             </div>

@@ -8,7 +8,7 @@ import {
     formatPercent
 } from "./admin-components.js";
 
-function renderAdminQuestionCard(question) {
+function renderAdminQuestionCard(question, distributionOptions) {
 
     return `
         <article class="ui-card ui-card--compact admin-question-card">
@@ -17,14 +17,14 @@ function renderAdminQuestionCard(question) {
                 <h3 class="ui-card__title admin-question-card__title" dir="rtl" lang="ur">${question.questionText}</h3>
             </header>
             <div class="ui-card__body">
-                ${renderDistributionBars(question.distribution, { compact: true })}
+                ${renderDistributionBars(question.distribution, distributionOptions)}
                 <p class="admin-question-card__meta">Positive implementation: ${formatPercent(question.positiveRate)}</p>
             </div>
         </article>`;
 
 }
 
-function renderAdminCategoryCard(category) {
+function renderAdminCategoryCard(category, distributionOptions) {
 
     return `
         <article class="ui-card ui-card--compact admin-category-card">
@@ -33,16 +33,16 @@ function renderAdminCategoryCard(category) {
                 <span class="ui-card__kicker">${category.questionCount || 0} questions · ${formatPercent(category.positiveRate)} positive</span>
             </header>
             <div class="ui-card__body">
-                ${renderDistributionBars(category.distribution, { compact: true })}
+                ${renderDistributionBars(category.distribution, distributionOptions)}
             </div>
         </article>`;
 
 }
 
-function renderAdminSectionHierarchyCard(section) {
+function renderAdminSectionHierarchyCard(section, distributionOptions) {
 
     const categoryMarkup = (section.categories || []).length
-        ? `<div class="admin-category-list">${section.categories.map(renderAdminCategoryCard).join("")}</div>`
+        ? `<div class="admin-category-list">${section.categories.map(category => renderAdminCategoryCard(category, distributionOptions)).join("")}</div>`
         : `<p class="ui-empty">No category data available for this section.</p>`;
 
     return `
@@ -52,14 +52,14 @@ function renderAdminSectionHierarchyCard(section) {
                 <span class="ui-card__kicker">${section.questionCount || 0} questions · ${formatPercent(section.positiveRate)} positive</span>
             </header>
             <div class="ui-card__body">
-                ${renderDistributionBars(section.distribution, { compact: true })}
+                ${renderDistributionBars(section.distribution, distributionOptions)}
                 ${categoryMarkup}
             </div>
         </article>`;
 
 }
 
-function renderAdminQuestionHierarchy(sections) {
+function renderAdminQuestionHierarchy(sections, distributionOptions) {
 
     if (!sections.length) {
         return `<p class="ui-empty">No question implementation data available.</p>`;
@@ -78,7 +78,7 @@ function renderAdminQuestionHierarchy(sections) {
                         <span>${category.questionCount || 0} questions · ${formatPercent(category.positiveRate)} positive</span>
                     </header>
                     <div class="admin-question-list">
-                        ${(category.questions || []).map(renderAdminQuestionCard).join("")}
+                        ${(category.questions || []).map(question => renderAdminQuestionCard(question, distributionOptions)).join("")}
                     </div>
                 </div>`).join("")}
         </section>`).join("");
@@ -88,6 +88,10 @@ function renderAdminQuestionHierarchy(sections) {
 export function renderAdminInsightsPage(data) {
 
     const sections = data.sections || [];
+    const distributionOptions = {
+        buckets: data.implementationBuckets,
+        compact: true
+    };
 
     return `
         ${renderPageIntro(
@@ -97,7 +101,7 @@ export function renderAdminInsightsPage(data) {
 
         ${renderSectionCard(
             "Overall Implementation Distribution",
-            renderDistributionCards(data.overallDistribution),
+            renderDistributionCards(data.overallDistribution, { buckets: data.implementationBuckets }),
             { description: "Community-wide response pattern across all completed assessments." }
         )}
 
@@ -132,14 +136,14 @@ export function renderAdminInsightsPage(data) {
 
         ${renderSectionCard(
             "Question-wise Implementation",
-            `<div class="admin-hierarchy-list">${renderAdminQuestionHierarchy(sections)}</div>`,
+            `<div class="admin-hierarchy-list">${renderAdminQuestionHierarchy(sections, distributionOptions)}</div>`,
             { description: "Questions grouped by questionnaire section and category." }
         )}
 
         ${renderSectionCard(
             "Section-wise Implementation",
             `<div class="admin-section-list">${sections.length
-                ? sections.map(renderAdminSectionHierarchyCard).join("")
+                ? sections.map(section => renderAdminSectionHierarchyCard(section, distributionOptions)).join("")
                 : `<p class="ui-empty">No section implementation data available.</p>`}</div>`,
             { description: "Implementation percentages grouped by questionnaire sections and nested categories." }
         )}`;

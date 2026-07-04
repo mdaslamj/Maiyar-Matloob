@@ -12,6 +12,7 @@ import {
     buildAdminInsightsPresentation,
     buildAdminTrendPresentation
 } from "../src/presentation/admin-section-presentation.js";
+import { buildImplementationBuckets } from "../src/trend/trend-community-config.js";
 import { buildReportSections, createReportInsights } from "../src/report/report.js";
 import { generateAssessment } from "../src/assessment/assessment.js";
 
@@ -94,14 +95,15 @@ function testReportPresentation() {
 function testAdminPresentation() {
 
     const questionnaire = loadQuestionnaire();
+    const implementationBuckets = buildImplementationBuckets(questionnaire.responseScale);
     const questions = questionnaire.questions.map((question, index) => ({
         questionId: question.id,
         standardId: question.standardId,
         section: question.section,
         category: question.category,
         questionText: question.question,
-        distribution: { always: 20, often: 20, sometimes: 20, rarely: 20, never: 20 },
-        positiveRate: 40
+        distribution: { always: 25, often: 25, sometimes: 25, never: 25 },
+        positiveRate: 50
     }));
     const sections = questions.reduce((map, question) => {
         if (!map[question.section]) {
@@ -109,8 +111,8 @@ function testAdminPresentation() {
                 sectionId: question.section,
                 sectionTitle: question.section,
                 questionCount: 0,
-                distribution: { always: 0, often: 0, sometimes: 0, rarely: 0, never: 0 },
-                positiveRate: 40
+                distribution: { always: 0, often: 0, sometimes: 0, never: 0 },
+                positiveRate: 50
             };
         }
 
@@ -120,13 +122,19 @@ function testAdminPresentation() {
     const adminPresentation = buildAdminInsightsPresentation({
         questionnaire,
         questions,
-        sections: Object.values(sections)
+        sections: Object.values(sections),
+        implementationBuckets
     });
     const trends = buildAdminTrendPresentation({
         questionnaire,
         hierarchicalSections: adminPresentation.sections
     });
 
+    assert(implementationBuckets.length === 4, "questionnaire-aligned bucket count");
+    assert(
+        !implementationBuckets.some(bucket => bucket.key === "rarely"),
+        "no extra rarely bucket"
+    );
     assert(adminPresentation.sections.length === 8, "admin hierarchical section count");
     assert(
         adminPresentation.sections.every(section => section.categories.length >= 1),

@@ -2,27 +2,40 @@ import {
     buildQuestionnaireHierarchy,
     getCanonicalSectionName
 } from "./section-hierarchy.js";
+import {
+    buildImplementationBuckets,
+    createEmptyDistribution,
+    RESPONSE_BUCKETS
+} from "../trend/trend-community-config.js";
 
-function aggregateDistribution(distributions) {
+function resolveBuckets(questionnaire, implementationBuckets) {
 
-    const totals = { always: 0, often: 0, sometimes: 0, rarely: 0, never: 0 };
+    if (implementationBuckets?.length) {
+        return implementationBuckets;
+    }
+
+    return buildImplementationBuckets(questionnaire?.responseScale);
+
+}
+
+function aggregateDistribution(distributions, buckets = RESPONSE_BUCKETS) {
+
+    const totals = createEmptyDistribution(buckets);
     const count = distributions.length || 1;
 
     distributions.forEach(distribution => {
-        totals.always += distribution.always || 0;
-        totals.often += distribution.often || 0;
-        totals.sometimes += distribution.sometimes || 0;
-        totals.rarely += distribution.rarely || 0;
-        totals.never += distribution.never || 0;
+        buckets.forEach(bucket => {
+            totals[bucket.key] += distribution[bucket.key] || 0;
+        });
     });
 
-    return {
-        always: Number((totals.always / count).toFixed(1)),
-        often: Number((totals.often / count).toFixed(1)),
-        sometimes: Number((totals.sometimes / count).toFixed(1)),
-        rarely: Number((totals.rarely / count).toFixed(1)),
-        never: Number((totals.never / count).toFixed(1))
-    };
+    const aggregated = {};
+
+    buckets.forEach(bucket => {
+        aggregated[bucket.key] = Number((totals[bucket.key] / count).toFixed(1));
+    });
+
+    return aggregated;
 
 }
 
@@ -53,9 +66,12 @@ export function buildAdminInsightsPresentation({
     sections = [],
     mostImplementedTeachings = [],
     leastImplementedTeachings = [],
-    trends = []
+    trends = [],
+    implementationBuckets = null
 } = {}) {
 
+    const buckets = resolveBuckets(questionnaire, implementationBuckets);
+    const emptyDistribution = createEmptyDistribution(buckets);
     const hierarchy = buildQuestionnaireHierarchy(questionnaire);
     const questionMap = new Map(questions.map(question => [question.questionId, question]));
     const sectionAggregateMap = new Map(sections.map(section => [
@@ -71,8 +87,8 @@ export function buildAdminInsightsPresentation({
                 .filter(Boolean);
 
             const distribution = categoryQuestions.length
-                ? aggregateDistribution(categoryQuestions.map(question => question.distribution))
-                : { always: 0, often: 0, sometimes: 0, rarely: 0, never: 0 };
+                ? aggregateDistribution(categoryQuestions.map(question => question.distribution), buckets)
+                : { ...emptyDistribution };
 
             return {
                 categoryId: category.categoryId,
@@ -87,8 +103,8 @@ export function buildAdminInsightsPresentation({
         const sectionQuestions = categoryGroups.flatMap(category => category.questions);
         const sectionDistribution = aggregate?.distribution
             || (sectionQuestions.length
-                ? aggregateDistribution(sectionQuestions.map(question => question.distribution))
-                : { always: 0, often: 0, sometimes: 0, rarely: 0, never: 0 });
+                ? aggregateDistribution(sectionQuestions.map(question => question.distribution), buckets)
+                : { ...emptyDistribution });
 
         return {
             sectionId: sectionNode.sectionId,

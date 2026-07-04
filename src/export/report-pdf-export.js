@@ -13,15 +13,63 @@ const CAPTURE_SCALE = 2;
 const JPEG_QUALITY = 0.92;
 
 let librariesPromise = null;
+const JSPDF_SCRIPT_ID = "maiyaar-jspdf-lib";
+
+function loadJsPdfUmd() {
+
+    const jsPDF = window.jspdf?.jsPDF;
+
+    if (typeof jsPDF === "function") {
+        return Promise.resolve(jsPDF);
+    }
+
+    const existing = document.getElementById(JSPDF_SCRIPT_ID);
+
+    if (existing?.dataset.loaded === "true") {
+        return Promise.resolve(window.jspdf?.jsPDF);
+    }
+
+    if (existing) {
+        return new Promise((resolve, reject) => {
+            existing.addEventListener("load", () => {
+                resolve(window.jspdf?.jsPDF);
+            }, { once: true });
+            existing.addEventListener("error", () => {
+                reject(new Error("jsPDF failed to load."));
+            }, { once: true });
+        });
+    }
+
+    return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.id = JSPDF_SCRIPT_ID;
+        script.src = new URL("../../vendor/jspdf.umd.min.js", import.meta.url).href;
+        script.async = true;
+        script.onload = () => {
+            script.dataset.loaded = "true";
+            const loadedJsPDF = window.jspdf?.jsPDF;
+
+            if (typeof loadedJsPDF !== "function") {
+                reject(new Error("jsPDF failed to load."));
+                return;
+            }
+
+            resolve(loadedJsPDF);
+        };
+        script.onerror = () => reject(new Error("jsPDF failed to load."));
+        document.head.appendChild(script);
+    });
+
+}
 
 function loadPdfLibraries() {
 
     if (!librariesPromise) {
         librariesPromise = Promise.all([
-            import("../../vendor/jspdf.es.min.js"),
+            loadJsPdfUmd(),
             import("../../vendor/html2canvas.esm.js")
-        ]).then(([jspdfModule, html2canvasModule]) => ({
-            jsPDF: jspdfModule.jsPDF,
+        ]).then(([jsPDF, html2canvasModule]) => ({
+            jsPDF,
             html2canvas: html2canvasModule.default
         }));
     }

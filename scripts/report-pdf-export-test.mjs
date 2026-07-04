@@ -5,6 +5,7 @@
  *   node scripts/report-pdf-export-test.mjs
  */
 
+import { existsSync } from "node:fs";
 import { buildReportPdfFilename } from "../src/export/report-pdf-export.js";
 
 function assert(condition, message) {
@@ -26,12 +27,10 @@ function testFilename() {
 
 async function testVendorImports() {
 
-    const [jspdfModule, html2canvasModule] = await Promise.all([
-        import("../vendor/jspdf.es.min.js"),
-        import("../vendor/html2canvas.esm.js")
-    ]);
+    assert(existsSync(new URL("../vendor/jspdf.umd.min.js", import.meta.url)), "jsPDF UMD bundle");
 
-    assert(typeof jspdfModule.jsPDF === "function", "jsPDF export");
+    const html2canvasModule = await import("../vendor/html2canvas.esm.js");
+
     assert(typeof html2canvasModule.default === "function", "html2canvas export");
 
     console.log("vendor import tests: PASS");
