@@ -1,4 +1,5 @@
 import { buildReportSections } from "../report/report.js";
+import { buildReportSectionPresentation } from "../presentation/report-section-presentation.js";
 
 export function deriveRawScoresFromAssessment(assessment) {
 
@@ -16,15 +17,26 @@ export function deriveRawScoresFromAssessment(assessment) {
 
 }
 
-export function buildHistoricalDashboardPresentation(report, snapshot) {
+export function buildHistoricalDashboardPresentation(report, snapshot, questionnaire = []) {
 
     const assessment = report?.assessment || {};
     const categories = assessment.categories || [];
+    const reportSections = buildReportSections(categories);
+    const insights = report?.insights || {};
 
     return {
-        reportSections: buildReportSections(categories),
-        insights: report?.insights || {},
+        reportSections,
+        insights,
         rawScores: deriveRawScoresFromAssessment(assessment),
+        sectionPresentation: buildReportSectionPresentation({
+            questionnaire,
+            reportSections,
+            insights,
+            strengths: report?.strengths || [],
+            weaknesses: report?.weaknesses || [],
+            recommendations: report?.recommendations || [],
+            growthQuestionGroups: insights.growthQuestionGroups || []
+        }),
         snapshot
     };
 

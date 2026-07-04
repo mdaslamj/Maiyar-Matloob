@@ -7,6 +7,7 @@ import {
     createFinalReport,
     createReportInsights
 } from "../report/report.js";
+import { buildReportSectionPresentation } from "../presentation/report-section-presentation.js";
 import {
     saveAnswers,
     loadAnswers,
@@ -522,18 +523,29 @@ class ApplicationService {
     getDashboardPresentation(report) {
 
         const categories = report.assessment.categories;
+        const reportSections = buildReportSections(categories);
+        const insights = report.insights || createReportInsights(report.assessment, this.getReportContext());
 
         return {
-            reportSections: buildReportSections(categories),
-            insights: report.insights || createReportInsights(report.assessment, this.getReportContext()),
-            rawScores: calculateRawScores(this.questionnaire, this.answers, this.responseScale)
+            reportSections,
+            insights,
+            rawScores: calculateRawScores(this.questionnaire, this.answers, this.responseScale),
+            sectionPresentation: buildReportSectionPresentation({
+                questionnaire: this.questionnaire,
+                reportSections,
+                insights,
+                strengths: report.strengths || [],
+                weaknesses: report.weaknesses || [],
+                recommendations: report.recommendations || [],
+                growthQuestionGroups: insights.growthQuestionGroups || []
+            })
         };
 
     }
 
     getHistoricalDashboardPresentation(report, snapshot) {
 
-        return buildHistoricalDashboardPresentation(report, snapshot);
+        return buildHistoricalDashboardPresentation(report, snapshot, this.questionnaire);
 
     }
 

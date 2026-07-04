@@ -459,6 +459,7 @@ function renderParticipantNewColumn(participant, isActive) {
                             name="participantName"
                             maxlength="100"
                             autocomplete="name"
+                            placeholder="اپنا پورا نام درج کریں"
                             value="${participant ? escapeHtml(participant.name) : ""}"
                             required>
                     </div>
@@ -476,6 +477,7 @@ function renderParticipantNewColumn(participant, isActive) {
                             inputmode="numeric"
                             maxlength="10"
                             autocomplete="tel"
+                            placeholder="03XXXXXXXXX"
                             dir="ltr"
                             value="${participant ? escapeHtml(participant.mobile) : ""}"
                             required>
@@ -2013,6 +2015,200 @@ function handleGrowthGroupToggle(event) {
 
 }
 
+function renderReportQuestionInsightCard(question) {
+
+    return `
+        <div class="question-insight-card">
+            <div class="question-insight-meta">
+                <div><strong>سوال نمبر:</strong> ${escapeHtml(question.questionNumber)}</div>
+                <div><strong>آپ کا جواب:</strong> ${escapeHtml(question.selectedAnswer)}</div>
+            </div>
+            <div class="question-insight-label">سوال</div>
+            <div class="question-insight-text">${escapeHtml(question.questionText)}</div>
+            <div class="question-insight-label">یہ سوال کس چیز کا جائزہ لیتا ہے؟</div>
+            <div class="question-insight-body">${escapeHtml(question.explanation)}</div>
+            <div class="question-insight-label">عملی بہتری</div>
+            <div class="question-insight-body">${escapeHtml(question.improvement)}</div>
+        </div>`;
+
+}
+
+function renderReportCategoryGroup(category, options = {}) {
+
+    const { showGrowthQuestions = false, showRecommendations = false } = options;
+    const growthQuestions = category.growthQuestions || [];
+    const recommendations = category.recommendations || [];
+
+    if (!category.categoryTitle) {
+        return "";
+    }
+
+    const growthMarkup = showGrowthQuestions && growthQuestions.length
+        ? `<div class="report-category-panel">
+                ${growthQuestions.map(renderReportQuestionInsightCard).join("")}
+           </div>`
+        : "";
+    const recommendationMarkup = showRecommendations && recommendations.length
+        ? `<ul class="report-checklist report-checklist--compact">
+                ${recommendations.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+           </ul>`
+        : "";
+
+    if (!growthMarkup && !recommendationMarkup && !options.showHeading) {
+        return "";
+    }
+
+    return `
+        <div class="report-category-group">
+            <h4 class="report-category-title">${escapeHtml(category.categoryTitle)}</h4>
+            ${growthMarkup}
+            ${recommendationMarkup}
+        </div>`;
+
+}
+
+function renderReportSectionReviewCard(section) {
+
+    const sectionClass = section.percentage >= 75 ? "strong-section" : section.percentage < 60 ? "weak-section" : "";
+    const sectionLevel = getPerformanceLevelLabel(section.level || "Critical");
+    const categoryMarkup = (section.categories || [])
+        .map(category => `
+            <div class="report-category-group report-category-group--review">
+                <h4 class="report-category-title">${escapeHtml(category.categoryTitle)}</h4>
+                <p class="report-category-meta">${category.questionCount} سوالات</p>
+            </div>`)
+        .join("");
+
+    return `
+        <div class="report-section-card ${sectionClass}">
+            <div class="report-section-row">
+                <div><strong>${escapeHtml(section.title)}</strong></div>
+                <div>${formatUrduPercent(section.percentage)}</div>
+                <div>${sectionLevel}</div>
+            </div>
+            <div class="report-section-bar"><span style="width:${Math.max(4, section.percentage)}%"></span></div>
+            <p class="report-section-interpretation">${escapeHtml(section.interpretation || "")}</p>
+            <div class="report-category-list">${categoryMarkup}</div>
+        </div>`;
+
+}
+
+function renderReportStrengthSectionBlock(section) {
+
+    const categoryMarkup = (section.categories || [])
+        .filter(category => category.questionCount)
+        .map(category => `
+            <div class="report-category-group report-category-group--inline">
+                <span class="report-category-title">${escapeHtml(category.categoryTitle)}</span>
+            </div>`)
+        .join("");
+
+    return `
+        <div class="report-highlight-card report-highlight-card--nested">
+            <div class="report-highlight-title">${escapeHtml(section.title)}</div>
+            <div class="report-highlight-value">${formatUrduPercent(section.percentage)}</div>
+            ${section.strengths?.[0]?.comment
+                ? `<p class="report-summary-text">${escapeHtml(section.strengths[0].comment)}</p>`
+                : ""}
+            <div class="report-category-list">${categoryMarkup}</div>
+        </div>`;
+
+}
+
+function renderReportGrowthSectionBlock(section, growthSectionExplanation) {
+
+    const categoryMarkup = (section.categories || [])
+        .filter(category => category.growthQuestions?.length)
+        .map(category => renderReportCategoryGroup(category, { showGrowthQuestions: true, showHeading: true }))
+        .join("");
+
+    return `
+        <div class="report-section-card weak-section">
+            <div class="report-section-row">
+                <div><strong>${escapeHtml(section.title)}</strong></div>
+                <div>${formatUrduPercent(section.percentage)}</div>
+            </div>
+            ${section.title === growthSectionExplanation?.title
+                ? `<p class="report-summary-text">${escapeHtml(growthSectionExplanation.text || "")}</p>`
+                : ""}
+            ${section.weaknesses?.[0]?.comment
+                ? `<p class="report-summary-text">${escapeHtml(section.weaknesses[0].comment)}</p>`
+                : ""}
+            ${categoryMarkup}
+        </div>`;
+
+}
+
+function renderReportGrowthHierarchy(sectionPresentation) {
+
+    const sectionsWithGrowthQuestions = (sectionPresentation.sections || []).filter(section => (
+        (section.categories || []).some(category => category.growthQuestions?.length)
+    ));
+
+    if (!sectionsWithGrowthQuestions.length) {
+        return '<p class="report-summary-text">یہ حصے کے لیے فی الحال کوئی سوالات دکھانے کی ضرورت نہیں۔</p>';
+    }
+
+    return sectionsWithGrowthQuestions.map(section => `
+        <div class="growth-group">
+            <button class="growth-group-toggle" type="button" data-expanded="false">${escapeHtml(section.title)}</button>
+            <div class="growth-group-panel" style="display:none;">
+                ${(section.categories || [])
+                    .filter(category => category.growthQuestions?.length)
+                    .map(category => renderReportCategoryGroup(category, {
+                        showGrowthQuestions: true,
+                        showHeading: true
+                    }))
+                    .join("")}
+            </div>
+        </div>`).join("");
+
+}
+
+function renderReportActionPlanHierarchy(sectionPresentation) {
+
+    const groupedSections = (sectionPresentation.sections || []).filter(section => section.actionPlan?.length);
+    const groupedItems = new Set(groupedSections.flatMap(section => section.actionPlan));
+    const ungroupedItems = (sectionPresentation.actionPlan || []).filter(item => !groupedItems.has(item));
+
+    const groupedMarkup = groupedSections.map(section => `
+        <div class="report-action-group">
+            <h4 class="report-category-title">${escapeHtml(section.title)}</h4>
+            <ul class="report-checklist">
+                ${section.actionPlan.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+            </ul>
+        </div>`).join("");
+
+    const ungroupedMarkup = ungroupedItems.length
+        ? `<ul class="report-checklist">${ungroupedItems.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+        : "";
+
+    return groupedMarkup || ungroupedMarkup || '<li class="report-summary-text">—</li>';
+
+}
+
+function renderReportRecommendationsHierarchy(sectionPresentation) {
+
+    const sectionsWithRecommendations = (sectionPresentation.sections || [])
+        .filter(section => section.recommendations?.length);
+
+    if (!sectionsWithRecommendations.length) {
+        return "";
+    }
+
+    return sectionsWithRecommendations.map(section => `
+        <div class="report-action-group">
+            <h4 class="report-category-title">${escapeHtml(section.title)}</h4>
+            <ul class="report-checklist">
+                ${section.recommendations.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+            </ul>
+            ${(section.categories || [])
+                .map(category => renderReportCategoryGroup(category, { showRecommendations: true }))
+                .join("")}
+        </div>`).join("");
+
+}
+
 function renderDashboard(report, options = {}) {
 
     const isHistorical = options.historical === true;
@@ -2025,7 +2221,7 @@ function renderDashboard(report, options = {}) {
     const presentation = isHistorical && snapshot
         ? application.getHistoricalDashboardPresentation(report, snapshot)
         : application.getDashboardPresentation(report);
-    const { reportSections, insights, rawScores } = presentation;
+    const { reportSections, insights, sectionPresentation } = presentation;
     const overallScoreLabel = rawScores.overall.max
         ? `${rawScores.overall.raw}/${rawScores.overall.max}`
         : formatUrduPercent(overall.percentage);
@@ -2037,8 +2233,13 @@ function renderDashboard(report, options = {}) {
             day: "numeric"
         });
 
-    const strongestSection = insights.strongestSection || { title: "—", percentage: 0 };
-    const growthSection = insights.growthSection || { title: "—", percentage: 0 };
+    const strongestSection = sectionPresentation?.strongestSection || insights.strongestSection || { title: "—", percentage: 0 };
+    const growthSection = sectionPresentation?.growthSection || insights.growthSection || { title: "—", percentage: 0 };
+    const hierarchySections = sectionPresentation?.sections || reportSections;
+    const strongSections = sectionPresentation?.strongSections || hierarchySections.filter(section => section.percentage >= 75);
+    const growthSections = sectionPresentation?.growthSections?.length
+        ? sectionPresentation.growthSections
+        : hierarchySections.filter(section => section.percentage < 60);
     const overallLevelLabel = getPerformanceLevelLabel(overall.level);
     const reportParticipant = report.participant || application.getCurrentParticipant();
     const participantMarkup = reportParticipant
@@ -2053,22 +2254,35 @@ function renderDashboard(report, options = {}) {
                     </div>`
         : "";
 
-    const sectionMarkup = reportSections.map(section => {
-        const sectionClass = section.percentage >= 75 ? "strong-section" : section.percentage < 60 ? "weak-section" : "";
-        const sectionLevel = getPerformanceLevelLabel(section.level || "Critical");
-        const sectionInterpretation = (insights.sections.find(item => item.title === section.title) || {}).interpretation || "";
+    const sectionMarkup = hierarchySections.map(renderReportSectionReviewCard).join("");
 
-        return `
-            <div class="report-section-card ${sectionClass}">
-                <div class="report-section-row">
-                    <div><strong>${section.title}</strong></div>
-                    <div>${formatUrduPercent(section.percentage)}</div>
-                    <div>${sectionLevel}</div>
-                </div>
-                <div class="report-section-bar"><span style="width:${Math.max(4, section.percentage)}%"></span></div>
-                <p class="report-section-interpretation">${sectionInterpretation}</p>
+    const strengthMarkup = strongSections.length
+        ? strongSections.map(renderReportStrengthSectionBlock).join("")
+        : `
+            <div class="report-highlight-card">
+                <div class="report-highlight-title">${escapeHtml(strongestSection.title)}</div>
+                <div class="report-highlight-value">${formatUrduPercent(strongestSection.percentage)}</div>
+                <p class="report-summary-text">${escapeHtml(sectionPresentation?.strongestSectionExplanation || insights.strongestSectionExplanation || "")}</p>
             </div>`;
-    }).join("");
+
+    const growthMarkup = growthSections.length
+        ? growthSections.map(section => renderReportGrowthSectionBlock(
+            section,
+            {
+                title: growthSection.title,
+                text: sectionPresentation?.growthSectionExplanation || insights.growthSectionExplanation || ""
+            }
+        )).join("")
+        : `
+            <div class="report-section-row">
+                <div><strong>${escapeHtml(growthSection.title)}</strong></div>
+                <div>${formatUrduPercent(growthSection.percentage)}</div>
+            </div>
+            <p class="report-summary-text">${escapeHtml(sectionPresentation?.growthSectionExplanation || insights.growthSectionExplanation || "")}</p>`;
+
+    const growthQuestionMarkup = renderReportGrowthHierarchy(sectionPresentation || { sections: [] });
+    const actionPlanMarkup = renderReportActionPlanHierarchy(sectionPresentation || { sections: [], actionPlan: insights.actionPlan || [] });
+    const recommendationsMarkup = renderReportRecommendationsHierarchy(sectionPresentation || { sections: [] });
 
     const reportHubActions = `
                 ${renderQuickActionButton("openProgressFromReportBtn", UI_ICONS.PROGRESS, UI_LABELS.PROGRESS_REVIEW, "ui-quick-action-btn")}
@@ -2142,56 +2356,37 @@ function renderDashboard(report, options = {}) {
 
             <section class="report-card report-card-green">
                 <div class="report-card-head"><span class="report-card-icon">✅</span><h3>آپ کے مضبوط شعبے</h3></div>
-                <div class="report-highlight-card">
-                    <div class="report-highlight-title">${strongestSection.title}</div>
-                    <div class="report-highlight-value">${formatUrduPercent(strongestSection.percentage)}</div>
-                    <p class="report-summary-text">${insights.strongestSectionExplanation}</p>
+                <div class="report-section-list">
+                    ${strengthMarkup}
                 </div>
             </section>
 
             <section class="report-card report-card-orange">
                 <div class="report-card-head"><span class="report-card-icon">🌱</span><h3>جہاں بہتری کی گنجائش ہے</h3></div>
                 <div class="report-section-list">
-                    <div class="report-section-row">
-                        <div><strong>${growthSection.title}</strong></div>
-                        <div>${formatUrduPercent(growthSection.percentage)}</div>
-                    </div>
-                    <p class="report-summary-text">${insights.growthSectionExplanation}</p>
+                    ${growthMarkup}
                 </div>
             </section>
 
             <section class="report-card report-card-red">
                 <div class="report-card-head"><span class="report-card-icon">📝</span><h3>جن باتوں پر غور کریں</h3></div>
                 <div class="report-section-list">
-                    ${(insights.growthQuestionGroups || []).length
-                        ? insights.growthQuestionGroups.map(group => `
-                            <div class="growth-group">
-                                <button class="growth-group-toggle" type="button" data-expanded="false">${group.sectionName}</button>
-                                <div class="growth-group-panel" style="display:none;">
-                                    ${group.questions.map(question => `
-                                        <div class="question-insight-card">
-                                            <div class="question-insight-meta">
-                                                <div><strong>سوال نمبر:</strong> ${question.questionNumber}</div>
-                                                <div><strong>آپ کا جواب:</strong> ${question.selectedAnswer}</div>
-                                            </div>
-                                            <div class="question-insight-label">سوال</div>
-                                            <div class="question-insight-text">${question.questionText}</div>
-                                            <div class="question-insight-label">یہ سوال کس چیز کا جائزہ لیتا ہے؟</div>
-                                            <div class="question-insight-body">${question.explanation}</div>
-                                            <div class="question-insight-label">عملی بہتری</div>
-                                            <div class="question-insight-body">${question.improvement}</div>
-                                        </div>`).join("")}
-                                </div>
-                            </div>`).join("")
-                        : '<p class="report-summary-text">یہ حصے کے لیے فی الحال کوئی سوالات دکھانے کی ضرورت نہیں۔</p>'}
+                    ${growthQuestionMarkup}
                 </div>
             </section>
 
+            ${recommendationsMarkup
+                ? `<section class="report-card report-card-blue">
+                <div class="report-card-head"><span class="report-card-icon">💡</span><h3>سفارشات</h3></div>
+                <div class="report-section-list">${recommendationsMarkup}</div>
+            </section>`
+                : ""}
+
             <section class="report-card report-card-green">
                 <div class="report-card-head"><span class="report-card-icon">🧭</span><h3>اگلے 30 دن کے لیے</h3></div>
-                <ul class="report-checklist">
-                    ${insights.actionPlan.map(item => `<li>${item}</li>`).join("")}
-                </ul>
+                <div class="report-action-list">
+                    ${actionPlanMarkup}
+                </div>
             </section>
 
             <section class="report-card report-card-orange">

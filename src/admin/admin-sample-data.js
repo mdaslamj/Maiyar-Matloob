@@ -13,6 +13,12 @@
  * - settings         → admin/settings
  */
 
+import { getCanonicalSectionName } from "../report/report.js";
+import {
+    buildAdminInsightsPresentation,
+    enrichAdminQuestionRecords
+} from "../presentation/admin-section-presentation.js";
+
 export const ADMIN_SAMPLE_SCHEMA_VERSION = 1;
 
 export const IMPLEMENTATION_BUCKETS = [
@@ -134,7 +140,8 @@ function buildQuestionImplementation(question, index) {
     return {
         questionId: question.id,
         standardId: question.standardId || question.id,
-        section: question.section,
+        section: getCanonicalSectionName(question.section),
+        category: question.category || question.section,
         questionText: question.question,
         distribution,
         positiveRate: positiveRate(distribution)
@@ -263,7 +270,10 @@ function buildSettings() {
 
 function buildSampleDataFromQuestionnaire(questionnaire) {
 
-    const questions = (questionnaire?.questions || []).map(buildQuestionImplementation);
+    const questions = enrichAdminQuestionRecords(
+        questionnaire,
+        (questionnaire?.questions || []).map(buildQuestionImplementation)
+    );
     const sections = buildSectionImplementation(questions);
     const teachings = buildTeachingRankings();
     const mostImplementedTeachings = [...teachings]
@@ -272,8 +282,7 @@ function buildSampleDataFromQuestionnaire(questionnaire) {
     const leastImplementedTeachings = [...teachings]
         .sort((left, right) => left.positiveRate - right.positiveRate)
         .slice(0, 10);
-
-    return {
+    const baseData = {
         schemaVersion: ADMIN_SAMPLE_SCHEMA_VERSION,
         summary: buildSummary(sections, SAMPLE_USERS),
         overallDistribution: buildOverallDistribution(questions),
@@ -284,6 +293,24 @@ function buildSampleDataFromQuestionnaire(questionnaire) {
         trends: IMPLEMENTATION_TRENDS,
         users: SAMPLE_USERS,
         settings: buildSettings()
+    };
+    const hierarchical = buildAdminInsightsPresentation({
+        questionnaire,
+        questions: baseData.questions,
+        sections: baseData.sections,
+        mostImplementedTeachings: baseData.mostImplementedTeachings,
+        leastImplementedTeachings: baseData.leastImplementedTeachings,
+        trends: baseData.trends
+    });
+
+    return {
+        ...baseData,
+        sections: hierarchical.sections,
+        questions: hierarchical.questions,
+        mostImplementedTeachings: hierarchical.mostImplementedTeachings,
+        leastImplementedTeachings: hierarchical.leastImplementedTeachings,
+        trends: hierarchical.trends,
+        sectionHierarchy: hierarchical.hierarchy
     };
 
 }
